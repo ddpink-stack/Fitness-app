@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Dumbbell, Utensils, Calendar, CalendarDays, TrendingUp, Flame, Info, Video, RefreshCw,
-  Lightbulb, ChevronDown, ChevronUp, ChevronRight, CircleCheck, Target, Activity,
+  Lightbulb, ChevronRight, CircleCheck, Target, Activity,
   CheckCircle2, NotebookPen, Search, X, Minus, Plus, MessageCircle, BarChart3, Droplets,
   Cookie, MoonStar, Footprints, Pencil, Timer, Camera, Download, Upload, RotateCcw,
   Trophy, History, Sunrise, Sun, Moon, GlassWater, PartyPopper
@@ -186,6 +186,78 @@ function Chip({ icon: Icon, children, onClick, tone = "neutral", style }) {
   );
 }
 
+// Small icon-only utility button (Info, Video, Swap, Coach tip on an
+// exercise card) — a row of these reads as one compact toolbar instead
+// of several full-size buttons competing for attention.
+function IconButton({ icon: Icon, onClick, label }) {
+  return (
+    <button
+      onClick={onClick}
+      aria-label={label}
+      style={{
+        width: 38,
+        height: 38,
+        borderRadius: "50%",
+        background: C.inset,
+        border: `1px solid ${C.border}`,
+        color: C.textDim,
+        cursor: "pointer",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        flexShrink: 0
+      }}
+    >
+      <Icon size={17} strokeWidth={2} />
+    </button>
+  );
+}
+
+// A modal sheet that slides up from the bottom (iOS-style) instead of
+// expanding content inline and pushing the rest of the list down.
+function BottomSheet({ title, onClose, children }) {
+  return (
+    <>
+      <div
+        onClick={onClose}
+        style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", zIndex: 60 }}
+      />
+      <div style={{
+        position: "fixed",
+        bottom: 0,
+        left: "50%",
+        transform: "translateX(-50%)",
+        width: "100%",
+        maxWidth: 420,
+        maxHeight: "85vh",
+        overflowY: "auto",
+        background: C.card,
+        borderTopLeftRadius: 24,
+        borderTopRightRadius: 24,
+        boxShadow: `0 -12px 40px ${C.shadow}`,
+        zIndex: 61,
+        boxSizing: "border-box"
+      }}>
+        <div style={{ display: "flex", justifyContent: "center", paddingTop: 10 }}>
+          <div style={{ width: 36, height: 5, borderRadius: 99, background: C.border }} />
+        </div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 20px 4px" }}>
+          <div style={{ fontWeight: 700, fontSize: 17 }}>{title}</div>
+          <button
+            onClick={onClose}
+            style={{ background: C.inset, border: "none", color: C.text, width: 30, height: 30, borderRadius: "50%", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
+          >
+            <X size={15} />
+          </button>
+        </div>
+        <div style={{ padding: "12px 20px calc(24px + env(safe-area-inset-bottom, 0px))" }}>
+          {children}
+        </div>
+      </div>
+    </>
+  );
+}
+
 export default function FitnessApp() {
   const [profile, setProfile] = useState(() => loadJSON(PROFILE_KEY, null));
   const [progress, setProgress] = useState(() => loadJSON(PROGRESS_KEY, {}));
@@ -195,9 +267,7 @@ export default function FitnessApp() {
   const [foodLog, setFoodLog] = useState(() => loadJSON(FOOD_LOG_KEY, {}));
   const [activeTab, setActiveTab] = useState("workout");
   const [selectedDayId, setSelectedDayId] = useState(null);
-  const [showTip, setShowTip] = useState({});
-  const [showVideo, setShowVideo] = useState({});
-  const [showInfo, setShowInfo] = useState({});
+  const [sheet, setSheet] = useState(null); // { type: "tip"|"video"|"info", ex, exUid }
   const [savedNote, setSavedNote] = useState(false);
   const [restTimer, setRestTimer] = useState(null); // { exUid, exName, total, secondsLeft }
   const [editingSchedule, setEditingSchedule] = useState(false);
@@ -553,17 +623,8 @@ export default function FitnessApp() {
     setRestTimer(null);
   };
 
-  const toggleTip = (id) => {
-    setShowTip((prev) => ({ ...prev, [id]: !prev[id] }));
-  };
-
-  const toggleVideo = (id) => {
-    setShowVideo((prev) => ({ ...prev, [id]: !prev[id] }));
-  };
-
-  const toggleInfo = (id) => {
-    setShowInfo((prev) => ({ ...prev, [id]: !prev[id] }));
-  };
+  const openSheet = (type, ex, exUid) => setSheet({ type, ex, exUid });
+  const closeSheet = () => setSheet(null);
 
   const tabs = [
     { id: "workout", label: "Workout", icon: Dumbbell },
@@ -732,56 +793,10 @@ export default function FitnessApp() {
                       <div style={{ fontWeight: 700, fontSize: 18, display: "flex", alignItems: "center", gap: 8, lineHeight: 1.3 }}>
                         {ex.name}
                         {exDone && <CircleCheck size={17} color={C.successBright} />}
-                        <button
-                          onClick={() => toggleInfo(exUid)}
-                          aria-label="What's this exercise for"
-                          style={{
-                            background: showInfo[exUid] ? C.accentBg : C.inset,
-                            border: "none",
-                            color: showInfo[exUid] ? C.accentSoft : C.textDim,
-                            borderRadius: "50%",
-                            width: 24,
-                            height: 24,
-                            cursor: "pointer",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            flexShrink: 0,
-                            padding: 0
-                          }}
-                        >
-                          <Info size={14} strokeWidth={2.3} />
-                        </button>
                       </div>
                       <div style={{ fontSize: 14, color: C.textDim, marginTop: 4 }}>
                         {ex.sets} sets · {ex.reps} · {ex.rest}
                       </div>
-                      {ex.weightsBySet && (
-                        <div style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 6,
-                          fontSize: 13,
-                          color: C.accentSoft,
-                          marginTop: 8,
-                          fontWeight: 600,
-                          background: C.accentBg,
-                          padding: "7px 10px",
-                          borderRadius: RADIUS.chip,
-                          lineHeight: 1.5
-                        }}>
-                          <Dumbbell size={14} style={{ flexShrink: 0 }} />
-                          {ex.weightsBySet.join(" → ")}
-                        </div>
-                      )}
-                    </div>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-end", flexShrink: 0 }}>
-                      <Chip icon={Video} onClick={() => toggleVideo(exUid)}>
-                        {showVideo[exUid] ? "Hide" : "Video"}
-                      </Chip>
-                      {!exDone && doneCount === 0 && (
-                        <Chip icon={RefreshCw} onClick={() => swapExercise(exIndex)}>Swap</Chip>
-                      )}
                     </div>
                   </div>
 
@@ -801,36 +816,7 @@ export default function FitnessApp() {
                     {ex.cue}
                   </div>
 
-                  {showVideo[exUid] && (
-                    <div style={{ marginBottom: 14 }}>
-                      <div style={{
-                        position: "relative",
-                        width: "100%",
-                        paddingBottom: "56.25%",
-                        borderRadius: RADIUS.chip,
-                        overflow: "hidden",
-                        background: "#000"
-                      }}>
-                        <iframe
-                          src={`https://www.youtube-nocookie.com/embed/${ex.videoId}`}
-                          title={`${ex.name} form video`}
-                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                          allowFullScreen
-                          style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: "none" }}
-                        />
-                      </div>
-                      <a
-                        href={`https://www.youtube.com/watch?v=${ex.videoId}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{ display: "inline-block", marginTop: 8, fontSize: 13, color: C.accentSoft, textDecoration: "none" }}
-                      >
-                        Open in YouTube ↗
-                      </a>
-                    </div>
-                  )}
-
-                  <div style={{ display: "flex", gap: 10, marginBottom: 14 }}>
+                  <div style={{ display: "flex", gap: 10, marginBottom: 10 }}>
                     {Array.from({ length: ex.sets }, (_, i) => {
                       const key = `${exUid}-${i + 1}`;
                       const done = dayProgress.completedSets[key];
@@ -870,51 +856,35 @@ export default function FitnessApp() {
                     })}
                   </div>
 
-                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                    <Chip icon={showTip[exUid] ? ChevronUp : ChevronDown} onClick={() => toggleTip(exUid)} tone="accent">
-                      Coach tip
-                    </Chip>
-                    {!exDone && (
-                      <Chip icon={CircleCheck} onClick={() => completeAllSets(exUid, ex.sets)} tone="success">
-                        Mark all done
-                      </Chip>
+                  {!exDone && (
+                    <button
+                      onClick={() => completeAllSets(exUid, ex.sets)}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 6,
+                        background: "none",
+                        border: "none",
+                        color: C.successBright,
+                        fontSize: 13,
+                        fontWeight: 600,
+                        cursor: "pointer",
+                        padding: 0,
+                        marginBottom: 16
+                      }}
+                    >
+                      <CircleCheck size={14} /> Mark all done
+                    </button>
+                  )}
+
+                  <div style={{ display: "flex", gap: 8, paddingTop: 14, borderTop: `1px solid ${C.border}` }}>
+                    <IconButton icon={Info} onClick={() => openSheet("info", ex, exUid)} label="What this works" />
+                    <IconButton icon={Video} onClick={() => openSheet("video", ex, exUid)} label="Video" />
+                    {!exDone && doneCount === 0 && (
+                      <IconButton icon={RefreshCw} onClick={() => swapExercise(exIndex)} label="Swap" />
                     )}
+                    <IconButton icon={MessageCircle} onClick={() => openSheet("tip", ex, exUid)} label="Coach tip" />
                   </div>
-                  {showTip[exUid] && (
-                    <div style={{
-                      marginTop: 10,
-                      padding: "12px 14px",
-                      background: C.accentBg,
-                      borderRadius: RADIUS.chip,
-                      fontSize: 14,
-                      color: C.text,
-                      lineHeight: 1.55
-                    }}>
-                      {ex.tip}
-                    </div>
-                  )}
-                  {showInfo[exUid] && (
-                    <div style={{
-                      marginTop: 10,
-                      padding: "14px",
-                      background: C.inset,
-                      borderRadius: RADIUS.chip,
-                      fontSize: 14,
-                      color: C.textDim,
-                      lineHeight: 1.6
-                    }}>
-                      {ex.muscles && (
-                        <div style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 10 }}>
-                          <Target size={16} color={C.accentSoft} style={{ flexShrink: 0, marginTop: 2 }} />
-                          <div>
-                            <span style={{ color: C.text, fontWeight: 700 }}>Targets: </span>
-                            {ex.muscles.join(", ")}
-                          </div>
-                        </div>
-                      )}
-                      <div>{categoryPurpose[ex.category]}</div>
-                    </div>
-                  )}
                 </div>
               );
             })}
@@ -1554,6 +1524,61 @@ export default function FitnessApp() {
           onImportClick={() => importInputRef.current?.click()}
           onRetake={retakeQuestionnaire}
         />
+      )}
+
+      {sheet && sheet.type === "info" && (
+        <BottomSheet title={`What ${sheet.ex.name} works`} onClose={closeSheet}>
+          {sheet.ex.muscles && (
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 12 }}>
+              <Target size={16} color={C.accentSoft} style={{ flexShrink: 0, marginTop: 2 }} />
+              <div style={{ fontSize: 15, color: C.text, lineHeight: 1.6 }}>
+                <span style={{ fontWeight: 700 }}>Targets: </span>
+                {sheet.ex.muscles.join(", ")}
+              </div>
+            </div>
+          )}
+          <div style={{ fontSize: 15, color: C.textDim, lineHeight: 1.6 }}>
+            {categoryPurpose[sheet.ex.category]}
+          </div>
+        </BottomSheet>
+      )}
+
+      {sheet && sheet.type === "tip" && (
+        <BottomSheet title="Coach tip" onClose={closeSheet}>
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
+            <MessageCircle size={16} color={C.accentSoft} style={{ flexShrink: 0, marginTop: 2 }} />
+            <div style={{ fontSize: 15, color: C.text, lineHeight: 1.6 }}>{sheet.ex.tip}</div>
+          </div>
+        </BottomSheet>
+      )}
+
+      {sheet && sheet.type === "video" && (
+        <BottomSheet title={`${sheet.ex.name} — Form Video`} onClose={closeSheet}>
+          <div style={{
+            position: "relative",
+            width: "100%",
+            paddingBottom: "56.25%",
+            borderRadius: RADIUS.chip,
+            overflow: "hidden",
+            background: "#000"
+          }}>
+            <iframe
+              src={`https://www.youtube-nocookie.com/embed/${sheet.ex.videoId}`}
+              title={`${sheet.ex.name} form video`}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: "none" }}
+            />
+          </div>
+          <a
+            href={`https://www.youtube.com/watch?v=${sheet.ex.videoId}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ display: "inline-block", marginTop: 10, fontSize: 13, color: C.accentSoft, textDecoration: "none" }}
+          >
+            Open in YouTube ↗
+          </a>
+        </BottomSheet>
       )}
     </div>
   );
