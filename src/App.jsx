@@ -766,6 +766,7 @@ export default function FitnessApp() {
     ? (() => {
         const q = foodQuery.trim().toLowerCase();
         return foodDatabase
+          .filter((f) => f.diets.includes(profile.diet))
           .filter((f) => f.name.toLowerCase().includes(q) || (f.keywords ?? []).some((k) => k.includes(q) || q.includes(k)))
           .slice(0, 6);
       })()
