@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Dumbbell, Utensils, Calendar, CalendarDays, TrendingUp, Flame, Info, Video, RefreshCw,
-  Lightbulb, ChevronRight, CircleCheck, Target, Activity,
+  Lightbulb, ChevronRight, ChevronDown, ChevronUp, CircleCheck, Target, Activity,
   CheckCircle2, NotebookPen, Search, X, Minus, Plus, MessageCircle, BarChart3, Droplets,
   Cookie, MoonStar, Footprints, Pencil, Timer, Camera, Download, Upload, RotateCcw,
   Trophy, History, Sunrise, Sun, Moon, GlassWater, PartyPopper, Wind, Zap
@@ -259,6 +259,63 @@ function BottomSheet({ title, onClose, children }) {
   );
 }
 
+function MealCard({ meal, icon: Icon, collapsible = false, defaultOpen = false }) {
+  const [open, setOpen] = useState(defaultOpen);
+  const isOpen = !collapsible || open;
+  return (
+    <div style={CARD}>
+      <div
+        onClick={collapsible ? () => setOpen((o) => !o) : undefined}
+        style={{ display: "flex", alignItems: "center", gap: 12, cursor: collapsible ? "pointer" : "default" }}
+      >
+        <div style={{
+          width: 38, height: 38, borderRadius: "50%", background: C.accentBg,
+          display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0
+        }}>
+          <Icon size={19} color={C.accentSoft} />
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontWeight: 700, fontSize: 17 }}>{meal.time}</div>
+          <div style={{ fontSize: 13, color: C.accentSoft, marginTop: 1 }}>{meal.time_label}</div>
+        </div>
+        {collapsible && (isOpen ? <ChevronUp size={18} color={C.textDim} /> : <ChevronDown size={18} color={C.textDim} />)}
+      </div>
+      {isOpen && (
+        <div style={{ marginTop: 12 }}>
+          {meal.options.map((opt, j) => (
+            <div key={j} style={{
+              display: "flex",
+              alignItems: "flex-start",
+              gap: 10,
+              padding: "8px 0",
+              fontSize: 15,
+              color: C.text,
+              borderTop: j > 0 ? `1px solid ${C.border}` : "none"
+            }}>
+              <span style={{ color: C.accentSoft, marginTop: 2 }}>◆</span>
+              {opt}
+            </div>
+          ))}
+          <div style={{
+            display: "flex",
+            alignItems: "flex-start",
+            gap: 8,
+            marginTop: 12,
+            padding: "10px 14px",
+            background: C.inset,
+            borderRadius: RADIUS.chip,
+            fontSize: 13,
+            color: C.textDim
+          }}>
+            <MessageCircle size={15} style={{ flexShrink: 0, marginTop: 1 }} />
+            {meal.note}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function FitnessApp() {
   const [profile, setProfile] = useState(() => loadJSON(PROFILE_KEY, null));
   const [progress, setProgress] = useState(() => loadJSON(PROGRESS_KEY, {}));
@@ -366,6 +423,8 @@ export default function FitnessApp() {
     [dayProgress]
   );
   const progressPct = totalSets ? Math.round((doneSets / totalSets) * 100) : 0;
+  const preWorkoutMeal = plan ? plan.nutrition.find((m) => m.time === "Pre Workout") : null;
+  const postWorkoutMeal = plan ? plan.nutrition.find((m) => m.time === "Post Workout") : null;
 
   // Logs a completed workout to history once every set is done, upserting
   // by day+date so revisiting an already-finished day doesn't duplicate it.
@@ -748,6 +807,10 @@ export default function FitnessApp() {
       <div style={{ padding: "20px 20px 0" }}>
         {activeTab === "workout" && (
           <div>
+            {preWorkoutMeal && (
+              <MealCard meal={preWorkoutMeal} icon={MEAL_ICONS["Pre Workout"] ?? Zap} collapsible />
+            )}
+
             <div style={CARD}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
                 <Flame size={20} color={C.warn} />
@@ -944,6 +1007,10 @@ export default function FitnessApp() {
                 </div>
               ))}
             </div>
+
+            {postWorkoutMeal && (
+              <MealCard meal={postWorkoutMeal} icon={MEAL_ICONS["Post Workout"] ?? GlassWater} collapsible />
+            )}
 
             {progressPct < 100 && (
               <button
@@ -1256,53 +1323,11 @@ export default function FitnessApp() {
               )}
             </div>
 
-            {plan.nutrition.map((meal, i) => {
-              const MealIcon = MEAL_ICONS[meal.time] ?? Utensils;
-              return (
-              <div key={i} style={CARD}>
-                <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
-                  <div style={{
-                    width: 38, height: 38, borderRadius: "50%", background: C.accentBg,
-                    display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0
-                  }}>
-                    <MealIcon size={19} color={C.accentSoft} />
-                  </div>
-                  <div>
-                    <div style={{ fontWeight: 700, fontSize: 17 }}>{meal.time}</div>
-                    <div style={{ fontSize: 13, color: C.accentSoft, marginTop: 1 }}>{meal.time_label}</div>
-                  </div>
-                </div>
-                {meal.options.map((opt, j) => (
-                  <div key={j} style={{
-                    display: "flex",
-                    alignItems: "flex-start",
-                    gap: 10,
-                    padding: "8px 0",
-                    fontSize: 15,
-                    color: C.text,
-                    borderTop: j > 0 ? `1px solid ${C.border}` : "none"
-                  }}>
-                    <span style={{ color: C.accentSoft, marginTop: 2 }}>◆</span>
-                    {opt}
-                  </div>
-                ))}
-                <div style={{
-                  display: "flex",
-                  alignItems: "flex-start",
-                  gap: 8,
-                  marginTop: 12,
-                  padding: "10px 14px",
-                  background: C.inset,
-                  borderRadius: RADIUS.chip,
-                  fontSize: 13,
-                  color: C.textDim
-                }}>
-                  <MessageCircle size={15} style={{ flexShrink: 0, marginTop: 1 }} />
-                  {meal.note}
-                </div>
-              </div>
-              );
-            })}
+            {plan.nutrition
+              .filter((meal) => meal.time !== "Pre Workout" && meal.time !== "Post Workout")
+              .map((meal, i) => (
+                <MealCard key={i} meal={meal} icon={MEAL_ICONS[meal.time] ?? Utensils} />
+              ))}
 
             <div style={CARD}>
               <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 14 }}>
