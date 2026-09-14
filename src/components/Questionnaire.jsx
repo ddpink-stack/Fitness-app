@@ -3,6 +3,14 @@ import { dietLabels } from "../data/meals.js";
 
 const questions = [
   {
+    key: "name",
+    type: "text",
+    label: "What should we call you?",
+    hint: "Just for a friendly greeting — you can skip this.",
+    placeholder: "e.g. Alex",
+    skippable: true
+  },
+  {
     key: "goal",
     label: "What's your main goal?",
     options: [
@@ -83,14 +91,19 @@ export default function Questionnaire({ onComplete }) {
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState({});
   const [numberInput, setNumberInput] = useState("");
+  const [textInput, setTextInput] = useState("");
 
   const question = questions[step];
   const isLast = step === questions.length - 1;
   const isNumber = question.type === "number";
+  const isText = question.type === "text";
 
   useEffect(() => {
     if (isNumber) {
       setNumberInput(answers[question.key] != null ? String(answers[question.key]) : "");
+    }
+    if (isText) {
+      setTextInput(answers[question.key] ?? "");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step]);
@@ -109,6 +122,20 @@ export default function Questionnaire({ onComplete }) {
     const num = parseFloat(numberInput);
     if (Number.isNaN(num) || num < question.min || num > question.max) return;
     choose(num);
+  };
+
+  const submitText = () => {
+    const trimmed = textInput.trim();
+    if (!trimmed) return;
+    choose(trimmed);
+  };
+
+  const skip = () => {
+    if (isLast) {
+      onComplete(answers);
+    } else {
+      setStep(step + 1);
+    }
   };
 
   return (
@@ -142,7 +169,65 @@ export default function Questionnaire({ onComplete }) {
         <div style={{ fontSize: 15, color: "#9898ac", marginBottom: 28, lineHeight: 1.6 }}>{question.hint}</div>
       )}
 
-      {isNumber ? (
+      {isText ? (
+        <div>
+          <input
+            type="text"
+            value={textInput}
+            onChange={(e) => setTextInput(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && submitText()}
+            placeholder={question.placeholder}
+            autoFocus
+            style={{
+              width: "100%",
+              background: "#15151f",
+              border: "1px solid rgba(255,255,255,0.08)",
+              borderRadius: 16,
+              padding: "20px",
+              color: "#f5f5f7",
+              fontSize: 20,
+              fontWeight: 700,
+              boxSizing: "border-box"
+            }}
+          />
+          <button
+            onClick={submitText}
+            disabled={textInput.trim() === ""}
+            style={{
+              marginTop: 16,
+              width: "100%",
+              background: textInput.trim() === "" ? "rgba(255,255,255,0.06)" : "linear-gradient(135deg, #7c6cff, #b3a4ff)",
+              border: "none",
+              borderRadius: 16,
+              color: textInput.trim() === "" ? "#6b6b80" : "#fff",
+              fontWeight: 700,
+              fontSize: 16,
+              padding: "17px 20px",
+              cursor: textInput.trim() === "" ? "default" : "pointer"
+            }}
+          >
+            Continue
+          </button>
+          {question.skippable && (
+            <button
+              onClick={skip}
+              style={{
+                marginTop: 14,
+                width: "100%",
+                background: "none",
+                border: "none",
+                color: "#9898ac",
+                fontSize: 14,
+                fontWeight: 600,
+                cursor: "pointer",
+                padding: 0
+              }}
+            >
+              Skip for now
+            </button>
+          )}
+        </div>
+      ) : isNumber ? (
         <div>
           <div style={{ position: "relative" }}>
             <input

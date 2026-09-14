@@ -40,6 +40,73 @@ function todayKey() {
   return new Date().toISOString().slice(0, 10);
 }
 
+function getInitials(name) {
+  if (!name || !name.trim()) return "🙂";
+  return name.trim().split(/\s+/).map((p) => p[0]).slice(0, 2).join("").toUpperCase();
+}
+
+// Downscales an uploaded photo to a small square before storing it as a
+// data URL in localStorage — an untouched phone photo would blow the
+// storage quota fast.
+function resizeImageFile(file, maxSize, onDone) {
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      let { width, height } = img;
+      if (width > height) {
+        if (width > maxSize) {
+          height = Math.round(height * (maxSize / width));
+          width = maxSize;
+        }
+      } else if (height > maxSize) {
+        width = Math.round(width * (maxSize / height));
+        height = maxSize;
+      }
+      canvas.width = width;
+      canvas.height = height;
+      canvas.getContext("2d").drawImage(img, 0, 0, width, height);
+      onDone(canvas.toDataURL("image/jpeg", 0.85));
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+const PROFILE_FIELD_OPTIONS = {
+  goal: [
+    { value: "fat-loss", label: "Fat Loss" },
+    { value: "muscle-gain", label: "Muscle Gain" },
+    { value: "general-fitness", label: "General Fitness" }
+  ],
+  level: [
+    { value: "beginner", label: "Beginner" },
+    { value: "intermediate", label: "Intermediate" },
+    { value: "advanced", label: "Advanced" }
+  ],
+  daysPerWeek: [
+    { value: 3, label: "3 days" },
+    { value: 4, label: "4 days" },
+    { value: 5, label: "5 days" }
+  ],
+  equipment: [
+    { value: "bodyweight", label: "Bodyweight" },
+    { value: "dumbbell", label: "Dumbbells" },
+    { value: "gym", label: "Full gym" }
+  ],
+  sex: [
+    { value: "male", label: "Male" },
+    { value: "female", label: "Female" },
+    { value: "unspecified", label: "Prefer not to say" }
+  ],
+  diet: [
+    { value: "vegetarian", label: "Vegetarian" },
+    { value: "vegan", label: "Vegan" },
+    { value: "nonveg", label: "Non-veg" }
+  ]
+};
+
 function parseRestSeconds(restLabel) {
   const match = /(\d+)/.exec(restLabel || "");
   return match ? parseInt(match[1], 10) : 60;
@@ -82,6 +149,8 @@ export default function FitnessApp() {
   const [customFoodMode, setCustomFoodMode] = useState(false);
   const [customFoodForm, setCustomFoodForm] = useState({ name: "", calories: "", protein: "", carbs: "", fat: "" });
   const importInputRef = useRef(null);
+  const avatarInputRef = useRef(null);
+  const [showProfile, setShowProfile] = useState(false);
 
   const plan = useMemo(() => {
     if (!profile) return null;
@@ -218,6 +287,19 @@ export default function FitnessApp() {
     setSelectedDayId(null);
     setRestTimer(null);
     setEditingSchedule(false);
+  };
+
+  const updateProfile = (patch) => {
+    setProfile((prev) => {
+      const next = { ...prev, ...patch };
+      saveJSON(PROFILE_KEY, next);
+      return next;
+    });
+  };
+
+  const pickAvatarFile = (file) => {
+    if (!file) return;
+    resizeImageFile(file, 160, (dataUrl) => updateProfile({ avatar: dataUrl }));
   };
 
   const exportBackup = () => {
@@ -448,42 +530,51 @@ export default function FitnessApp() {
         background: "linear-gradient(160deg, #201c3d 0%, #171a30 55%, #0f1220 100%)",
         padding: "26px 20px 24px"
       }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
-          <div style={{ fontSize: 12, color: C.accentSoft, letterSpacing: 2.5, textTransform: "uppercase", fontWeight: 700 }}>
-            Your Plan
-          </div>
-          <div style={{ display: "flex", gap: 14, alignItems: "center", flexShrink: 0 }}>
-            <button
-              onClick={exportBackup}
-              style={{ background: "none", border: "none", color: C.textFaint, fontSize: 12, cursor: "pointer", padding: 0 }}
-            >
-              ⬇ Export
-            </button>
-            <button
-              onClick={() => importInputRef.current?.click()}
-              style={{ background: "none", border: "none", color: C.textFaint, fontSize: 12, cursor: "pointer", padding: 0 }}
-            >
-              ⬆ Import
-            </button>
-            <input
-              ref={importInputRef}
-              type="file"
-              accept="application/json"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) importBackup(file);
-                e.target.value = "";
-              }}
-              style={{ display: "none" }}
+        <button
+          onClick={() => setShowProfile(true)}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+            background: "none",
+            border: "none",
+            padding: 0,
+            cursor: "pointer",
+            textAlign: "left",
+            width: "100%"
+          }}
+        >
+          {profile.avatar ? (
+            <img
+              src={profile.avatar}
+              alt=""
+              style={{ width: 46, height: 46, borderRadius: "50%", objectFit: "cover", flexShrink: 0, border: `1px solid ${C.border}` }}
             />
-            <button
-              onClick={retakeQuestionnaire}
-              style={{ background: "none", border: "none", color: C.textFaint, fontSize: 12, cursor: "pointer", padding: 0 }}
-            >
-              Retake
-            </button>
+          ) : (
+            <div style={{
+              width: 46,
+              height: 46,
+              borderRadius: "50%",
+              background: "linear-gradient(135deg, #7c6cff, #b3a4ff)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: 17,
+              fontWeight: 800,
+              color: "#fff",
+              flexShrink: 0
+            }}>
+              {getInitials(profile.name)}
+            </div>
+          )}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 20, fontWeight: 800, color: C.text }}>
+              Hey{profile.name ? `, ${profile.name}` : ""} 👋
+            </div>
+            <div style={{ fontSize: 13, color: C.textFaint, marginTop: 2 }}>Tap to view or edit your profile</div>
           </div>
-        </div>
+          <span style={{ fontSize: 18, color: C.textFaint }}>›</span>
+        </button>
 
         <div style={{ display: "flex", gap: 8, overflowX: "auto", marginTop: 16, paddingBottom: 2 }}>
           {plan.trainingDays.map((d) => (
@@ -1371,6 +1462,241 @@ export default function FitnessApp() {
             <div style={{ fontSize: 11, fontWeight: activeTab === tab.id ? 700 : 500 }}>{tab.label}</div>
           </button>
         ))}
+      </div>
+
+      <input
+        ref={avatarInputRef}
+        type="file"
+        accept="image/*"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) pickAvatarFile(file);
+          e.target.value = "";
+        }}
+        style={{ display: "none" }}
+      />
+      <input
+        ref={importInputRef}
+        type="file"
+        accept="application/json"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) importBackup(file);
+          e.target.value = "";
+        }}
+        style={{ display: "none" }}
+      />
+
+      {showProfile && (
+        <ProfilePanel
+          profile={profile}
+          onClose={() => setShowProfile(false)}
+          onUpdate={updateProfile}
+          onPickAvatar={() => avatarInputRef.current?.click()}
+          onExport={exportBackup}
+          onImportClick={() => importInputRef.current?.click()}
+          onRetake={retakeQuestionnaire}
+        />
+      )}
+    </div>
+  );
+}
+
+function ProfilePanel({ profile, onClose, onUpdate, onPickAvatar, onExport, onImportClick, onRetake }) {
+  const [nameDraft, setNameDraft] = useState(profile.name || "");
+  const [weightDraft, setWeightDraft] = useState(profile.bodyWeight != null ? String(profile.bodyWeight) : "");
+  const [ageDraft, setAgeDraft] = useState(profile.age != null ? String(profile.age) : "");
+
+  const commitName = () => {
+    const trimmed = nameDraft.trim();
+    if (trimmed !== (profile.name || "")) onUpdate({ name: trimmed });
+  };
+  const commitWeight = () => {
+    const num = parseFloat(weightDraft);
+    if (!Number.isNaN(num) && num > 0 && num !== profile.bodyWeight) onUpdate({ bodyWeight: num });
+  };
+  const commitAge = () => {
+    const num = parseInt(ageDraft, 10);
+    if (!Number.isNaN(num) && num > 0 && num !== profile.age) onUpdate({ age: num });
+  };
+
+  const handleRetake = () => {
+    if (window.confirm("This resets your whole plan, progress, and schedule. Are you sure?")) {
+      onRetake();
+    }
+  };
+
+  const fieldRow = (label, key, hint) => (
+    <div style={{ marginBottom: 18 }}>
+      <div style={{ fontSize: 13, color: C.textDim, marginBottom: 8, fontWeight: 600 }}>{label}</div>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        {PROFILE_FIELD_OPTIONS[key].map((opt) => {
+          const selected = profile[key] === opt.value;
+          return (
+            <button
+              key={opt.value}
+              onClick={() => onUpdate({ [key]: opt.value })}
+              style={{
+                background: selected ? "linear-gradient(135deg, #7c6cff, #b3a4ff)" : C.inset,
+                border: selected ? `1px solid ${C.accent}` : `1px solid ${C.border}`,
+                color: selected ? "#fff" : C.textDim,
+                borderRadius: RADIUS.chip,
+                padding: "9px 14px",
+                fontSize: 13,
+                fontWeight: 700,
+                cursor: "pointer"
+              }}
+            >
+              {opt.label}
+            </button>
+          );
+        })}
+      </div>
+      {hint && <div style={{ fontSize: 12, color: C.textFaint, marginTop: 6, lineHeight: 1.5 }}>{hint}</div>}
+    </div>
+  );
+
+  return (
+    <div style={{
+      position: "fixed",
+      inset: 0,
+      background: C.bg,
+      zIndex: 50,
+      overflowY: "auto",
+      maxWidth: 420,
+      margin: "0 auto"
+    }}>
+      <div style={{
+        background: "linear-gradient(160deg, #201c3d 0%, #171a30 55%, #0f1220 100%)",
+        padding: "24px 20px",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between"
+      }}>
+        <div style={{ fontSize: 20, fontWeight: 800 }}>Your Profile</div>
+        <button
+          onClick={onClose}
+          style={{ background: "rgba(255,255,255,0.08)", border: "none", color: C.text, width: 32, height: 32, borderRadius: "50%", fontSize: 15, cursor: "pointer" }}
+        >
+          ✕
+        </button>
+      </div>
+
+      <div style={{ padding: "24px 20px" }}>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 28 }}>
+          <button
+            onClick={onPickAvatar}
+            style={{ background: "none", border: "none", padding: 0, cursor: "pointer", position: "relative" }}
+          >
+            {profile.avatar ? (
+              <img
+                src={profile.avatar}
+                alt=""
+                style={{ width: 88, height: 88, borderRadius: "50%", objectFit: "cover", border: `1px solid ${C.border}` }}
+              />
+            ) : (
+              <div style={{
+                width: 88,
+                height: 88,
+                borderRadius: "50%",
+                background: "linear-gradient(135deg, #7c6cff, #b3a4ff)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: 30,
+                fontWeight: 800,
+                color: "#fff"
+              }}>
+                {getInitials(profile.name)}
+              </div>
+            )}
+            <div style={{
+              position: "absolute",
+              bottom: 0,
+              right: 0,
+              width: 30,
+              height: 30,
+              borderRadius: "50%",
+              background: C.card,
+              border: `2px solid ${C.bg}`,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: 14
+            }}>
+              📷
+            </div>
+          </button>
+          <div style={{ fontSize: 13, color: C.textFaint, marginTop: 10 }}>Tap to change photo</div>
+        </div>
+
+        <div style={{ marginBottom: 18 }}>
+          <div style={{ fontSize: 13, color: C.textDim, marginBottom: 8, fontWeight: 600 }}>Name</div>
+          <input
+            value={nameDraft}
+            onChange={(e) => setNameDraft(e.target.value)}
+            onBlur={commitName}
+            placeholder="e.g. Alex"
+            style={{ width: "100%", background: C.inset, border: `1px solid ${C.border}`, borderRadius: RADIUS.chip, color: C.text, padding: 13, fontSize: 15, boxSizing: "border-box" }}
+          />
+        </div>
+
+        <div style={{ display: "flex", gap: 12, marginBottom: 18 }}>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 13, color: C.textDim, marginBottom: 8, fontWeight: 600 }}>Body weight (kg)</div>
+            <input
+              type="number"
+              value={weightDraft}
+              onChange={(e) => setWeightDraft(e.target.value)}
+              onBlur={commitWeight}
+              style={{ width: "100%", background: C.inset, border: `1px solid ${C.border}`, borderRadius: RADIUS.chip, color: C.text, padding: 13, fontSize: 15, boxSizing: "border-box" }}
+            />
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 13, color: C.textDim, marginBottom: 8, fontWeight: 600 }}>Age</div>
+            <input
+              type="number"
+              value={ageDraft}
+              onChange={(e) => setAgeDraft(e.target.value)}
+              onBlur={commitAge}
+              style={{ width: "100%", background: C.inset, border: `1px solid ${C.border}`, borderRadius: RADIUS.chip, color: C.text, padding: 13, fontSize: 15, boxSizing: "border-box" }}
+            />
+          </div>
+        </div>
+        <div style={{ fontSize: 12, color: C.textFaint, marginTop: -10, marginBottom: 20, lineHeight: 1.5 }}>
+          Update these whenever they change — worth a quick check every few weeks, since your suggested weights and calorie targets are based on them.
+        </div>
+
+        {fieldRow("Sex", "sex")}
+        {fieldRow("Main goal", "goal")}
+        {fieldRow("Experience level", "level")}
+        {fieldRow("Days per week", "daysPerWeek", profile.daysPerWeek && "Changing this regenerates your split — a custom Schedule (Edit Days) may reset to the default.")}
+        {fieldRow("Equipment", "equipment")}
+        {fieldRow("Diet", "diet")}
+
+        <div style={{ borderTop: `1px solid ${C.border}`, marginTop: 12, paddingTop: 20 }}>
+          <div style={{ fontSize: 13, color: C.textDim, marginBottom: 12, fontWeight: 600 }}>Data & Account</div>
+          <div style={{ display: "flex", gap: 10, marginBottom: 12 }}>
+            <button
+              onClick={onExport}
+              style={{ flex: 1, background: C.inset, border: `1px solid ${C.border}`, borderRadius: RADIUS.chip, color: C.text, padding: "12px 0", fontSize: 14, fontWeight: 700, cursor: "pointer" }}
+            >
+              ⬇ Export backup
+            </button>
+            <button
+              onClick={onImportClick}
+              style={{ flex: 1, background: C.inset, border: `1px solid ${C.border}`, borderRadius: RADIUS.chip, color: C.text, padding: "12px 0", fontSize: 14, fontWeight: 700, cursor: "pointer" }}
+            >
+              ⬆ Import backup
+            </button>
+          </div>
+          <button
+            onClick={handleRetake}
+            style={{ width: "100%", background: "rgba(248,113,113,0.1)", border: "1px solid rgba(248,113,113,0.25)", borderRadius: RADIUS.chip, color: C.danger, padding: "12px 0", fontSize: 14, fontWeight: 700, cursor: "pointer" }}
+          >
+            Retake full questionnaire
+          </button>
+        </div>
       </div>
     </div>
   );
