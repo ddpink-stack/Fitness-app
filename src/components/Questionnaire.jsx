@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { dietLabels } from "../data/meals.js";
 
 const questions = [
@@ -141,9 +142,9 @@ export default function Questionnaire({ onComplete }) {
   return (
     <div style={{
       fontFamily: "'Inter', 'Helvetica Neue', sans-serif",
-      background: "#0a0a0f",
+      background: "var(--bg)",
       minHeight: "100vh",
-      color: "#f5f5f7",
+      color: "var(--text)",
       maxWidth: 420,
       margin: "0 auto",
       padding: "32px 24px",
@@ -151,12 +152,12 @@ export default function Questionnaire({ onComplete }) {
       display: "flex",
       flexDirection: "column"
     }}>
-      <div style={{ fontSize: 12, color: "#b3a4ff", letterSpacing: 2.5, textTransform: "uppercase", marginBottom: 10, fontWeight: 700 }}>
+      <div style={{ fontSize: 12, color: "var(--accent-soft)", letterSpacing: 2.5, textTransform: "uppercase", marginBottom: 10, fontWeight: 700 }}>
         Step {step + 1} of {questions.length}
       </div>
-      <div style={{ background: "rgba(255,255,255,0.08)", borderRadius: 99, height: 6, marginBottom: 36 }}>
+      <div style={{ background: "var(--inset)", borderRadius: 99, height: 6, marginBottom: 36 }}>
         <div style={{
-          background: "linear-gradient(90deg, #7c6cff, #b3a4ff)",
+          background: "var(--accent)",
           width: `${((step + 1) / questions.length) * 100}%`,
           height: "100%",
           borderRadius: 99,
@@ -166,7 +167,7 @@ export default function Questionnaire({ onComplete }) {
 
       <h1 style={{ fontSize: 28, fontWeight: 800, marginBottom: question.hint ? 10 : 28, lineHeight: 1.25, letterSpacing: -0.5 }}>{question.label}</h1>
       {question.hint && (
-        <div style={{ fontSize: 15, color: "#9898ac", marginBottom: 28, lineHeight: 1.6 }}>{question.hint}</div>
+        <div style={{ fontSize: 15, color: "var(--text-dim)", marginBottom: 28, lineHeight: 1.6 }}>{question.hint}</div>
       )}
 
       {isText ? (
@@ -180,11 +181,11 @@ export default function Questionnaire({ onComplete }) {
             autoFocus
             style={{
               width: "100%",
-              background: "#15151f",
-              border: "1px solid rgba(255,255,255,0.08)",
+              background: "var(--card)",
+              border: "1px solid var(--border)",
               borderRadius: 16,
               padding: "20px",
-              color: "#f5f5f7",
+              color: "var(--text)",
               fontSize: 20,
               fontWeight: 700,
               boxSizing: "border-box"
@@ -196,10 +197,10 @@ export default function Questionnaire({ onComplete }) {
             style={{
               marginTop: 16,
               width: "100%",
-              background: textInput.trim() === "" ? "rgba(255,255,255,0.06)" : "linear-gradient(135deg, #7c6cff, #b3a4ff)",
+              background: textInput.trim() === "" ? "var(--inset)" : "var(--accent)",
               border: "none",
               borderRadius: 16,
-              color: textInput.trim() === "" ? "#6b6b80" : "#fff",
+              color: textInput.trim() === "" ? "var(--text-faint)" : "#fff",
               fontWeight: 700,
               fontSize: 16,
               padding: "17px 20px",
@@ -216,7 +217,7 @@ export default function Questionnaire({ onComplete }) {
                 width: "100%",
                 background: "none",
                 border: "none",
-                color: "#9898ac",
+                color: "var(--text-dim)",
                 fontSize: 14,
                 fontWeight: 600,
                 cursor: "pointer",
@@ -242,11 +243,11 @@ export default function Questionnaire({ onComplete }) {
               autoFocus
               style={{
                 width: "100%",
-                background: "#15151f",
-                border: "1px solid rgba(255,255,255,0.08)",
+                background: "var(--card)",
+                border: "1px solid var(--border)",
                 borderRadius: 16,
                 padding: "20px 68px 20px 20px",
-                color: "#f5f5f7",
+                color: "var(--text)",
                 fontSize: 22,
                 fontWeight: 700,
                 boxSizing: "border-box"
@@ -257,7 +258,7 @@ export default function Questionnaire({ onComplete }) {
               right: 20,
               top: "50%",
               transform: "translateY(-50%)",
-              color: "#6b6b80",
+              color: "var(--text-faint)",
               fontSize: 15,
               fontWeight: 600
             }}>
@@ -270,10 +271,10 @@ export default function Questionnaire({ onComplete }) {
             style={{
               marginTop: 16,
               width: "100%",
-              background: numberInput === "" ? "rgba(255,255,255,0.06)" : "linear-gradient(135deg, #7c6cff, #b3a4ff)",
+              background: numberInput === "" ? "var(--inset)" : "var(--accent)",
               border: "none",
               borderRadius: 16,
-              color: numberInput === "" ? "#6b6b80" : "#fff",
+              color: numberInput === "" ? "var(--text-faint)" : "#fff",
               fontWeight: 700,
               fontSize: 16,
               padding: "17px 20px",
@@ -290,17 +291,24 @@ export default function Questionnaire({ onComplete }) {
               key={opt.value}
               onClick={() => choose(opt.value)}
               style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 12,
                 textAlign: "left",
-                background: "#15151f",
-                border: "1px solid rgba(255,255,255,0.08)",
+                background: "var(--card)",
+                border: "1px solid var(--border)",
                 borderRadius: 16,
-                padding: "18px 20px",
-                color: "#f5f5f7",
+                padding: "18px 18px 18px 20px",
+                color: "var(--text)",
                 cursor: "pointer"
               }}
             >
-              <div style={{ fontWeight: 700, fontSize: 17 }}>{opt.label}</div>
-              {opt.desc && <div style={{ fontSize: 14, color: "#9898ac", marginTop: 4 }}>{opt.desc}</div>}
+              <div>
+                <div style={{ fontWeight: 700, fontSize: 17 }}>{opt.label}</div>
+                {opt.desc && <div style={{ fontSize: 14, color: "var(--text-dim)", marginTop: 4 }}>{opt.desc}</div>}
+              </div>
+              <ChevronRight size={18} color="var(--text-faint)" style={{ flexShrink: 0 }} />
             </button>
           ))}
         </div>
@@ -311,9 +319,12 @@ export default function Questionnaire({ onComplete }) {
           onClick={() => setStep(step - 1)}
           style={{
             marginTop: 24,
+            display: "flex",
+            alignItems: "center",
+            gap: 4,
             background: "none",
             border: "none",
-            color: "#b3a4ff",
+            color: "var(--accent-soft)",
             fontSize: 15,
             fontWeight: 600,
             cursor: "pointer",
@@ -321,7 +332,7 @@ export default function Questionnaire({ onComplete }) {
             alignSelf: "flex-start"
           }}
         >
-          ← Back
+          <ChevronLeft size={17} /> Back
         </button>
       )}
     </div>

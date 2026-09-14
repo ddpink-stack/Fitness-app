@@ -1,4 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  Dumbbell, Utensils, Calendar, CalendarDays, TrendingUp, Flame, Info, Video, RefreshCw,
+  Lightbulb, ChevronDown, ChevronUp, ChevronRight, CircleCheck, Target, Activity,
+  CheckCircle2, NotebookPen, Search, X, Minus, Plus, MessageCircle, BarChart3, Droplets,
+  Cookie, MoonStar, Footprints, Pencil, Timer, Camera, Download, Upload, RotateCcw,
+  Trophy, History, Sunrise, Sun, Moon, GlassWater, PartyPopper
+} from "lucide-react";
 import Questionnaire from "./components/Questionnaire.jsx";
 import { generateWeekPlan, computeWeightsBySet, getSwapPool } from "./lib/planGenerator.js";
 import { availableEquipment, categoryPurpose } from "./data/exercises.js";
@@ -11,26 +18,34 @@ const SWAPS_KEY = "fitness-app:swaps";
 const CUSTOM_DAYS_KEY = "fitness-app:customDays";
 const FOOD_LOG_KEY = "fitness-app:foodLog";
 const WEEKDAY_NAMES = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const MEAL_ICONS = { Breakfast: Sunrise, Lunch: Sun, Dinner: Moon, "Post Workout": GlassWater };
 
-// Shared design tokens — one dark, purple-accented system used everywhere
-// so cards, type, and spacing stay consistent instead of each screen
-// inventing its own numbers.
+// Shared design tokens — CSS custom properties (defined in index.css)
+// so the whole app follows the system light/dark setting automatically,
+// the way a native iOS app does, instead of one hardcoded palette.
 const C = {
-  bg: "#0a0a0f",
-  card: "#15151f",
-  cardDone: "#0e1f16",
-  inset: "#0d0d16",
-  border: "rgba(255,255,255,0.07)",
-  borderDone: "rgba(74,222,128,0.28)",
-  text: "#f5f5f7",
-  textDim: "#9898ac",
-  textFaint: "#6b6b80",
-  accent: "#7c6cff",
-  accentSoft: "#b3a4ff",
-  success: "#34d399",
-  successBright: "#4ade80",
-  danger: "#f87171",
-  warn: "#fbbf24"
+  bg: "var(--bg)",
+  headerGrad: "var(--header-grad)",
+  card: "var(--card)",
+  cardDone: "var(--card-done)",
+  inset: "var(--inset)",
+  border: "var(--border)",
+  borderDone: "var(--border-done)",
+  text: "var(--text)",
+  textDim: "var(--text-dim)",
+  textFaint: "var(--text-faint)",
+  accent: "var(--accent)",
+  accentSoft: "var(--accent-soft)",
+  accentBg: "var(--accent-bg)",
+  success: "var(--success)",
+  successBright: "var(--success-bright)",
+  successBg: "var(--success-bg)",
+  danger: "var(--danger)",
+  dangerBg: "var(--danger-bg)",
+  warn: "var(--warn)",
+  warnBg: "var(--warn-bg)",
+  tabBarBg: "var(--tabbar-bg)",
+  shadow: "var(--shadow)"
 };
 const RADIUS = { card: 20, control: 14, pill: 999, chip: 12 };
 const CARD = { background: C.card, border: `1px solid ${C.border}`, borderRadius: RADIUS.card, padding: 20, marginBottom: 16 };
@@ -48,7 +63,7 @@ function isSameCalendarDay(isoDate) {
 }
 
 function getInitials(name) {
-  if (!name || !name.trim()) return "🙂";
+  if (!name || !name.trim()) return "";
   return name.trim().split(/\s+/).map((p) => p[0]).slice(0, 2).join("").toUpperCase();
 }
 
@@ -134,6 +149,41 @@ function saveJSON(key, value) {
   } catch {
     // storage unavailable (private browsing, quota, etc.) — progress just won't persist
   }
+}
+
+// Small reusable secondary-action chip (Coach tip, Swap, Video, Mark all
+// done, Edit Days, ...) so every button-with-icon in the app shares one
+// consistent shape, size, and icon weight instead of each being bespoke.
+function Chip({ icon: Icon, children, onClick, tone = "neutral", style }) {
+  const tones = {
+    neutral: { bg: C.inset, color: C.textDim, border: `1px solid ${C.border}` },
+    accent: { bg: C.accentBg, color: C.accentSoft, border: "none" },
+    success: { bg: C.successBg, color: C.successBright, border: "none" }
+  };
+  const t = tones[tone];
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 6,
+        background: t.bg,
+        border: t.border,
+        color: t.color,
+        borderRadius: RADIUS.chip,
+        padding: "8px 13px",
+        fontSize: 13,
+        fontWeight: 600,
+        cursor: "pointer",
+        whiteSpace: "nowrap",
+        ...style
+      }}
+    >
+      {Icon && <Icon size={15} strokeWidth={2.2} />}
+      {children}
+    </button>
+  );
 }
 
 export default function FitnessApp() {
@@ -516,10 +566,10 @@ export default function FitnessApp() {
   };
 
   const tabs = [
-    { id: "workout", label: "Workout", icon: "🏋️" },
-    { id: "nutrition", label: "Nutrition", icon: "🍽️" },
-    { id: "schedule", label: "Schedule", icon: "📅" },
-    { id: "progress", label: "Progress", icon: "📈" }
+    { id: "workout", label: "Workout", icon: Dumbbell },
+    { id: "nutrition", label: "Nutrition", icon: Utensils },
+    { id: "schedule", label: "Schedule", icon: Calendar },
+    { id: "progress", label: "Progress", icon: TrendingUp }
   ];
 
   return (
@@ -534,8 +584,9 @@ export default function FitnessApp() {
       paddingBottom: TAB_BAR_HEIGHT + 16
     }}>
       <div style={{
-        background: "linear-gradient(160deg, #201c3d 0%, #171a30 55%, #0f1220 100%)",
-        padding: "26px 20px 24px"
+        background: C.headerGrad,
+        padding: "26px 20px 24px",
+        borderBottom: `1px solid ${C.border}`
       }}>
         <button
           onClick={() => setShowProfile(true)}
@@ -562,7 +613,7 @@ export default function FitnessApp() {
               width: 46,
               height: 46,
               borderRadius: "50%",
-              background: "linear-gradient(135deg, #7c6cff, #b3a4ff)",
+              background: C.accent,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -571,7 +622,7 @@ export default function FitnessApp() {
               color: "#fff",
               flexShrink: 0
             }}>
-              {getInitials(profile.name)}
+              {getInitials(profile.name) || <Dumbbell size={19} color="#fff" />}
             </div>
           )}
           <div style={{ flex: 1, minWidth: 0 }}>
@@ -580,7 +631,7 @@ export default function FitnessApp() {
             </div>
             <div style={{ fontSize: 13, color: C.textFaint, marginTop: 2 }}>Tap to view or edit your profile</div>
           </div>
-          <span style={{ fontSize: 18, color: C.textFaint }}>›</span>
+          <ChevronRight size={18} color={C.textFaint} />
         </button>
 
         <div style={{ display: "flex", gap: 8, overflowX: "auto", marginTop: 16, paddingBottom: 2 }}>
@@ -593,7 +644,7 @@ export default function FitnessApp() {
                 padding: "10px 18px",
                 borderRadius: RADIUS.pill,
                 border: d.id === workout.id ? `1px solid ${C.accent}` : `1px solid ${C.border}`,
-                background: d.id === workout.id ? "rgba(124,108,255,0.18)" : "transparent",
+                background: d.id === workout.id ? C.accentBg : "transparent",
                 color: d.id === workout.id ? C.accentSoft : C.textDim,
                 fontSize: 14,
                 fontWeight: 700,
@@ -606,8 +657,11 @@ export default function FitnessApp() {
           ))}
         </div>
 
-        <div style={{ fontSize: 12, color: C.accentSoft, letterSpacing: 2, textTransform: "uppercase", fontWeight: 700, marginTop: 24 }}>
-          {isSameCalendarDay(workout.date) ? "🔥 Today's Workout" : "Your Workout"}
+        <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 24 }}>
+          {isSameCalendarDay(workout.date) && <Flame size={14} color={C.accentSoft} />}
+          <div style={{ fontSize: 12, color: C.accentSoft, letterSpacing: 2, textTransform: "uppercase", fontWeight: 700 }}>
+            {isSameCalendarDay(workout.date) ? "Today's Workout" : "Your Workout"}
+          </div>
         </div>
         <div style={{ fontSize: 30, fontWeight: 800, letterSpacing: -0.8, marginTop: 6, lineHeight: 1.15 }}>{workout.label}</div>
         <div style={{ fontSize: 15, color: C.textDim, marginTop: 4, fontWeight: 500 }}>{workout.dateLabel}</div>
@@ -617,9 +671,9 @@ export default function FitnessApp() {
             <span style={{ fontSize: 14, color: C.textDim, fontWeight: 500 }}>{doneSets}/{totalSets} sets done</span>
             <span style={{ fontSize: 20, fontWeight: 800, color: progressPct === 100 ? C.successBright : C.accentSoft }}>{progressPct}%</span>
           </div>
-          <div style={{ background: "rgba(255,255,255,0.08)", borderRadius: RADIUS.pill, height: 10 }}>
+          <div style={{ background: C.inset, borderRadius: RADIUS.pill, height: 10 }}>
             <div style={{
-              background: progressPct === 100 ? "linear-gradient(90deg, #4ade80, #22c55e)" : "linear-gradient(90deg, #7c6cff, #b3a4ff)",
+              background: progressPct === 100 ? C.success : C.accent,
               width: `${progressPct}%`,
               height: "100%",
               borderRadius: RADIUS.pill,
@@ -634,14 +688,14 @@ export default function FitnessApp() {
           <div>
             <div style={CARD}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-                <span style={{ fontSize: 20 }}>🔥</span>
+                <Flame size={20} color={C.warn} />
                 <span style={{ fontWeight: 700, fontSize: 17 }}>Warm Up — 5 min</span>
                 <span style={{
                   marginLeft: "auto",
                   fontSize: 11,
                   fontWeight: 700,
                   color: C.warn,
-                  background: "rgba(251,191,36,0.12)",
+                  background: C.warnBg,
                   padding: "4px 10px",
                   borderRadius: RADIUS.pill
                 }}>
@@ -649,7 +703,7 @@ export default function FitnessApp() {
                 </span>
               </div>
               {["3 min easy treadmill walk (flat)", "10 arm circles each direction", "10 bodyweight squats"].map((item, i) => (
-                <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 0", fontSize: 15, color: "#d4d4e0" }}>
+                <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 0", fontSize: 15, color: C.text }}>
                   <span style={{ color: C.accentSoft, fontSize: 8 }}>●</span> {item}
                 </div>
               ))}
@@ -677,19 +731,17 @@ export default function FitnessApp() {
                       </div>
                       <div style={{ fontWeight: 700, fontSize: 18, display: "flex", alignItems: "center", gap: 8, lineHeight: 1.3 }}>
                         {ex.name}
-                        {exDone && <span style={{ fontSize: 15, color: C.successBright }}>✓</span>}
+                        {exDone && <CircleCheck size={17} color={C.successBright} />}
                         <button
                           onClick={() => toggleInfo(exUid)}
                           aria-label="What's this exercise for"
                           style={{
-                            background: showInfo[exUid] ? "rgba(124,108,255,0.25)" : "rgba(255,255,255,0.08)",
+                            background: showInfo[exUid] ? C.accentBg : C.inset,
                             border: "none",
                             color: showInfo[exUid] ? C.accentSoft : C.textDim,
                             borderRadius: "50%",
-                            width: 22,
-                            height: 22,
-                            fontSize: 13,
-                            fontWeight: 700,
+                            width: 24,
+                            height: 24,
                             cursor: "pointer",
                             display: "flex",
                             alignItems: "center",
@@ -698,7 +750,7 @@ export default function FitnessApp() {
                             padding: 0
                           }}
                         >
-                          ⓘ
+                          <Info size={14} strokeWidth={2.3} />
                         </button>
                       </div>
                       <div style={{ fontSize: 14, color: C.textDim, marginTop: 4 }}>
@@ -706,70 +758,47 @@ export default function FitnessApp() {
                       </div>
                       {ex.weightsBySet && (
                         <div style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 6,
                           fontSize: 13,
                           color: C.accentSoft,
                           marginTop: 8,
                           fontWeight: 600,
-                          background: "rgba(124,108,255,0.1)",
+                          background: C.accentBg,
                           padding: "7px 10px",
                           borderRadius: RADIUS.chip,
                           lineHeight: 1.5
                         }}>
-                          🏋️ {ex.weightsBySet.join(" → ")}
+                          <Dumbbell size={14} style={{ flexShrink: 0 }} />
+                          {ex.weightsBySet.join(" → ")}
                         </div>
                       )}
                     </div>
                     <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-end", flexShrink: 0 }}>
-                      <button
-                        onClick={() => toggleVideo(exUid)}
-                        style={{
-                          background: "rgba(255,68,68,0.12)",
-                          border: "1px solid rgba(255,68,68,0.25)",
-                          color: "#ff6b6b",
-                          borderRadius: RADIUS.chip,
-                          padding: "7px 12px",
-                          fontSize: 12,
-                          fontWeight: 700,
-                          cursor: "pointer",
-                          whiteSpace: "nowrap",
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 4
-                        }}
-                      >
-                        {showVideo[exUid] ? "▲ Hide" : "▶ Video"}
-                      </button>
+                      <Chip icon={Video} onClick={() => toggleVideo(exUid)}>
+                        {showVideo[exUid] ? "Hide" : "Video"}
+                      </Chip>
                       {!exDone && doneCount === 0 && (
-                        <button
-                          onClick={() => swapExercise(exIndex)}
-                          style={{
-                            background: "none",
-                            border: `1px solid ${C.border}`,
-                            color: C.textDim,
-                            borderRadius: RADIUS.chip,
-                            padding: "7px 12px",
-                            fontSize: 12,
-                            fontWeight: 700,
-                            cursor: "pointer",
-                            whiteSpace: "nowrap"
-                          }}
-                        >
-                          🔄 Swap
-                        </button>
+                        <Chip icon={RefreshCw} onClick={() => swapExercise(exIndex)}>Swap</Chip>
                       )}
                     </div>
                   </div>
 
                   <div style={{
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: 10,
                     background: C.inset,
                     borderRadius: RADIUS.chip,
                     padding: "12px 14px",
                     fontSize: 14,
-                    color: "#a8a8bd",
+                    color: C.textDim,
                     marginBottom: 14,
                     lineHeight: 1.55
                   }}>
-                    💡 {ex.cue}
+                    <Lightbulb size={16} color={C.warn} style={{ flexShrink: 0, marginTop: 2 }} />
+                    {ex.cue}
                   </div>
 
                   {showVideo[exUid] && (
@@ -814,15 +843,18 @@ export default function FitnessApp() {
                             padding: "15px 0",
                             borderRadius: RADIUS.control,
                             border: done ? "none" : `1px solid ${C.border}`,
-                            background: done ? "linear-gradient(135deg, #7c6cff, #b3a4ff)" : C.inset,
+                            background: done ? C.accent : C.inset,
                             color: done ? "#fff" : C.textDim,
                             fontWeight: 700,
                             fontSize: 16,
                             cursor: "pointer",
-                            transition: "all 0.2s"
+                            transition: "all 0.2s",
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "center"
                           }}
                         >
-                          <div>{done ? "✓" : `Set ${i + 1}`}</div>
+                          {done ? <CircleCheck size={18} /> : `Set ${i + 1}`}
                           {ex.weightsBySet && (
                             <div style={{
                               fontSize: 11,
@@ -839,66 +871,45 @@ export default function FitnessApp() {
                   </div>
 
                   <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                    <button
-                      onClick={() => toggleTip(exUid)}
-                      style={{
-                        background: "rgba(124,108,255,0.1)",
-                        border: "none",
-                        color: C.accentSoft,
-                        fontSize: 13,
-                        cursor: "pointer",
-                        padding: "7px 12px",
-                        borderRadius: RADIUS.chip,
-                        fontWeight: 600
-                      }}
-                    >
-                      {showTip[exUid] ? "▲ Coach tip" : "▼ Coach tip"}
-                    </button>
+                    <Chip icon={showTip[exUid] ? ChevronUp : ChevronDown} onClick={() => toggleTip(exUid)} tone="accent">
+                      Coach tip
+                    </Chip>
                     {!exDone && (
-                      <button
-                        onClick={() => completeAllSets(exUid, ex.sets)}
-                        style={{
-                          background: "rgba(74,222,128,0.1)",
-                          border: "none",
-                          color: C.successBright,
-                          fontSize: 13,
-                          cursor: "pointer",
-                          padding: "7px 12px",
-                          borderRadius: RADIUS.chip,
-                          fontWeight: 600
-                        }}
-                      >
-                        ✓ Mark all done
-                      </button>
+                      <Chip icon={CircleCheck} onClick={() => completeAllSets(exUid, ex.sets)} tone="success">
+                        Mark all done
+                      </Chip>
                     )}
                   </div>
                   {showTip[exUid] && (
                     <div style={{
                       marginTop: 10,
                       padding: "12px 14px",
-                      background: "rgba(124,108,255,0.08)",
+                      background: C.accentBg,
                       borderRadius: RADIUS.chip,
                       fontSize: 14,
-                      color: "#cdbfff",
+                      color: C.text,
                       lineHeight: 1.55
                     }}>
-                      🎯 {ex.tip}
+                      {ex.tip}
                     </div>
                   )}
                   {showInfo[exUid] && (
                     <div style={{
                       marginTop: 10,
                       padding: "14px",
-                      background: "rgba(255,255,255,0.04)",
+                      background: C.inset,
                       borderRadius: RADIUS.chip,
                       fontSize: 14,
-                      color: "#c8c8da",
+                      color: C.textDim,
                       lineHeight: 1.6
                     }}>
                       {ex.muscles && (
-                        <div style={{ marginBottom: 10 }}>
-                          <span style={{ color: C.text, fontWeight: 700 }}>🎯 Targets: </span>
-                          {ex.muscles.join(", ")}
+                        <div style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 10 }}>
+                          <Target size={16} color={C.accentSoft} style={{ flexShrink: 0, marginTop: 2 }} />
+                          <div>
+                            <span style={{ color: C.text, fontWeight: 700 }}>Targets: </span>
+                            {ex.muscles.join(", ")}
+                          </div>
                         </div>
                       )}
                       <div>{categoryPurpose[ex.category]}</div>
@@ -910,7 +921,7 @@ export default function FitnessApp() {
 
             <div style={CARD}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
-                <span style={{ fontSize: 22 }}>🏃</span>
+                <Activity size={22} color={C.accentSoft} />
                 <div>
                   <div style={{ fontWeight: 700, fontSize: 17 }}>Treadmill Cardio</div>
                   <div style={{ fontSize: 14, color: C.textDim, marginTop: 2 }}>{workout.cardio.duration}</div>
@@ -936,7 +947,11 @@ export default function FitnessApp() {
               <button
                 onClick={finishWorkout}
                 style={{
-                  background: "linear-gradient(135deg, #16a34a, #22c55e)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
+                  background: C.success,
                   border: "none",
                   borderRadius: RADIUS.control,
                   color: "#fff",
@@ -946,15 +961,19 @@ export default function FitnessApp() {
                   cursor: "pointer",
                   width: "100%",
                   marginBottom: 16,
-                  boxShadow: "0 8px 24px rgba(34,197,94,0.25)"
+                  boxSizing: "border-box"
                 }}
               >
-                ✅ Finish Workout
+                <CheckCircle2 size={19} />
+                Finish Workout
               </button>
             )}
 
             <div style={CARD}>
-              <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 12 }}>📝 Post-Workout Notes</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 12 }}>
+                <NotebookPen size={18} color={C.accentSoft} />
+                <div style={{ fontWeight: 700, fontSize: 16 }}>Post-Workout Notes</div>
+              </div>
               <textarea
                 placeholder="How did it feel? Any exercise that was hard? Weights used?"
                 value={dayProgress.notes}
@@ -977,7 +996,7 @@ export default function FitnessApp() {
                 onClick={() => setSavedNote(true)}
                 style={{
                   marginTop: 10,
-                  background: "linear-gradient(135deg, #7c6cff, #b3a4ff)",
+                  background: C.accent,
                   border: "none",
                   borderRadius: RADIUS.chip,
                   color: "#fff",
@@ -988,22 +1007,22 @@ export default function FitnessApp() {
                   width: "100%"
                 }}
               >
-                {savedNote ? "✓ Saved!" : "Save Notes"}
+                {savedNote ? "Saved" : "Save Notes"}
               </button>
             </div>
 
             {progressPct === 100 && (
               <div style={{
-                background: "linear-gradient(135deg, #0a4a34, #0f6b4a)",
-                border: "1px solid rgba(52,211,153,0.35)",
+                background: C.successBg,
+                border: `1px solid ${C.borderDone}`,
                 borderRadius: RADIUS.card,
                 padding: 28,
                 textAlign: "center",
                 marginBottom: 16
               }}>
-                <div style={{ fontSize: 40, marginBottom: 10 }}>🎉</div>
+                <PartyPopper size={36} color={C.successBright} style={{ marginBottom: 10 }} />
                 <div style={{ fontWeight: 800, fontSize: 20, color: C.successBright }}>{workout.label} Complete!</div>
-                <div style={{ fontSize: 14, color: "#8fe0bd", marginTop: 6 }}>Come back and tackle your next day.</div>
+                <div style={{ fontSize: 14, color: C.textDim, marginTop: 6 }}>Come back and tackle your next day.</div>
               </div>
             )}
           </div>
@@ -1012,8 +1031,11 @@ export default function FitnessApp() {
         {activeTab === "nutrition" && (
           <div>
             <div style={CARD}>
-              <div style={{ fontWeight: 700, fontSize: 17, marginBottom: 6 }}>
-                🎯 Your Targets — {goalLabels[profile.goal] ?? "General Fitness"}
+              <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 6 }}>
+                <Target size={18} color={C.accentSoft} />
+                <div style={{ fontWeight: 700, fontSize: 17 }}>
+                  Your Targets — {goalLabels[profile.goal] ?? "General Fitness"}
+                </div>
               </div>
               <div style={{ fontSize: 13, color: C.textDim, marginBottom: 16, lineHeight: 1.6 }}>
                 {plan.nutritionTargets.tip}
@@ -1034,7 +1056,10 @@ export default function FitnessApp() {
             </div>
 
             <div style={CARD}>
-              <div style={{ fontWeight: 700, fontSize: 17, marginBottom: 14 }}>🍽️ Today's Food Log</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 14 }}>
+                <Utensils size={18} color={C.accentSoft} />
+                <div style={{ fontWeight: 700, fontSize: 17 }}>Today's Food Log</div>
+              </div>
 
               <div style={{ marginBottom: 18 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14, color: C.textDim, marginBottom: 8 }}>
@@ -1043,11 +1068,9 @@ export default function FitnessApp() {
                     {foodTotals.calories === 0 ? "Not logged yet" : foodTotals.calories > plan.nutritionTargets.calories ? "Over target" : "On track"}
                   </span>
                 </div>
-                <div style={{ background: "rgba(255,255,255,0.08)", borderRadius: RADIUS.pill, height: 10 }}>
+                <div style={{ background: C.inset, borderRadius: RADIUS.pill, height: 10 }}>
                   <div style={{
-                    background: foodTotals.calories > plan.nutritionTargets.calories
-                      ? "linear-gradient(90deg, #f87171, #ef4444)"
-                      : "linear-gradient(90deg, #7c6cff, #b3a4ff)",
+                    background: foodTotals.calories > plan.nutritionTargets.calories ? C.danger : C.accent,
                     width: `${Math.min(100, (foodTotals.calories / plan.nutritionTargets.calories) * 100)}%`,
                     height: "100%",
                     borderRadius: RADIUS.pill,
@@ -1059,22 +1082,24 @@ export default function FitnessApp() {
                 </div>
               </div>
 
-              <input
-                value={foodQuery}
-                onChange={(e) => setFoodQuery(e.target.value)}
-                placeholder="Search food e.g. chapati, rice, egg..."
-                style={{
-                  width: "100%",
-                  background: C.inset,
-                  border: `1px solid ${C.border}`,
-                  borderRadius: RADIUS.chip,
-                  color: C.text,
-                  padding: 14,
-                  fontSize: 15,
-                  boxSizing: "border-box",
-                  marginBottom: foodQuery ? 10 : 0
-                }}
-              />
+              <div style={{ position: "relative", marginBottom: foodQuery ? 10 : 0 }}>
+                <Search size={16} color={C.textFaint} style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)" }} />
+                <input
+                  value={foodQuery}
+                  onChange={(e) => setFoodQuery(e.target.value)}
+                  placeholder="Search food e.g. chapati, rice, egg..."
+                  style={{
+                    width: "100%",
+                    background: C.inset,
+                    border: `1px solid ${C.border}`,
+                    borderRadius: RADIUS.chip,
+                    color: C.text,
+                    padding: "14px 14px 14px 40px",
+                    fontSize: 15,
+                    boxSizing: "border-box"
+                  }}
+                />
+              </div>
 
               {foodQuery.trim().length > 0 && !customFoodMode && (
                 <div style={{ marginBottom: 10 }}>
@@ -1174,7 +1199,7 @@ export default function FitnessApp() {
                   <div style={{ display: "flex", gap: 10 }}>
                     <button
                       onClick={submitCustomFood}
-                      style={{ flex: 1, background: "linear-gradient(135deg, #7c6cff, #b3a4ff)", border: "none", borderRadius: 10, color: "#fff", fontWeight: 700, fontSize: 14, padding: "11px 0", cursor: "pointer" }}
+                      style={{ flex: 1, background: C.accent, border: "none", borderRadius: 10, color: "#fff", fontWeight: 700, fontSize: 14, padding: "11px 0", cursor: "pointer" }}
                     >
                       Add
                     </button>
@@ -1195,31 +1220,31 @@ export default function FitnessApp() {
                     return (
                     <div key={e.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 0", borderTop: `1px solid ${C.border}`, fontSize: 14, gap: 10 }}>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ color: "#d4d4e0" }}>{e.name}</div>
+                        <div style={{ color: C.text }}>{e.name}</div>
                         {e.unit && <div style={{ color: C.textFaint, fontSize: 12, marginTop: 2 }}>{e.unit} each</div>}
                       </div>
                       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                         <button
                           onClick={() => updateFoodQty(e.id, -1)}
-                          style={{ width: 28, height: 28, background: C.inset, border: `1px solid ${C.border}`, borderRadius: 8, color: C.textDim, cursor: "pointer", fontSize: 15, lineHeight: 1, padding: 0 }}
+                          style={{ width: 28, height: 28, background: C.inset, border: `1px solid ${C.border}`, borderRadius: 8, color: C.textDim, cursor: "pointer", padding: 0, display: "flex", alignItems: "center", justifyContent: "center" }}
                         >
-                          −
+                          <Minus size={14} />
                         </button>
                         <span style={{ minWidth: 18, textAlign: "center", color: C.text, fontWeight: 700 }}>{qty}</span>
                         <button
                           onClick={() => updateFoodQty(e.id, 1)}
-                          style={{ width: 28, height: 28, background: C.inset, border: `1px solid ${C.border}`, borderRadius: 8, color: C.textDim, cursor: "pointer", fontSize: 15, lineHeight: 1, padding: 0 }}
+                          style={{ width: 28, height: 28, background: C.inset, border: `1px solid ${C.border}`, borderRadius: 8, color: C.textDim, cursor: "pointer", padding: 0, display: "flex", alignItems: "center", justifyContent: "center" }}
                         >
-                          +
+                          <Plus size={14} />
                         </button>
                       </div>
                       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                         <span style={{ color: C.accentSoft, fontWeight: 600, whiteSpace: "nowrap" }}>{Math.round(e.calories * qty)} kcal</span>
                         <button
                           onClick={() => removeFoodEntry(e.id)}
-                          style={{ background: "none", border: "none", color: C.textFaint, cursor: "pointer", fontSize: 14, padding: 0 }}
+                          style={{ background: "none", border: "none", color: C.textFaint, cursor: "pointer", padding: 0, display: "flex" }}
                         >
-                          ✕
+                          <X size={15} />
                         </button>
                       </div>
                     </div>
@@ -1229,10 +1254,17 @@ export default function FitnessApp() {
               )}
             </div>
 
-            {plan.nutrition.map((meal, i) => (
+            {plan.nutrition.map((meal, i) => {
+              const MealIcon = MEAL_ICONS[meal.time] ?? Utensils;
+              return (
               <div key={i} style={CARD}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-                  <span style={{ fontSize: 24 }}>{meal.icon}</span>
+                <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
+                  <div style={{
+                    width: 38, height: 38, borderRadius: "50%", background: C.accentBg,
+                    display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0
+                  }}>
+                    <MealIcon size={19} color={C.accentSoft} />
+                  </div>
                   <div>
                     <div style={{ fontWeight: 700, fontSize: 17 }}>{meal.time}</div>
                     <div style={{ fontSize: 13, color: C.accentSoft, marginTop: 1 }}>{meal.time_label}</div>
@@ -1245,7 +1277,7 @@ export default function FitnessApp() {
                     gap: 10,
                     padding: "8px 0",
                     fontSize: 15,
-                    color: "#d4d4e0",
+                    color: C.text,
                     borderTop: j > 0 ? `1px solid ${C.border}` : "none"
                   }}>
                     <span style={{ color: C.accentSoft, marginTop: 2 }}>◆</span>
@@ -1253,6 +1285,9 @@ export default function FitnessApp() {
                   </div>
                 ))}
                 <div style={{
+                  display: "flex",
+                  alignItems: "flex-start",
+                  gap: 8,
                   marginTop: 12,
                   padding: "10px 14px",
                   background: C.inset,
@@ -1260,19 +1295,24 @@ export default function FitnessApp() {
                   fontSize: 13,
                   color: C.textDim
                 }}>
-                  💬 {meal.note}
+                  <MessageCircle size={15} style={{ flexShrink: 0, marginTop: 1 }} />
+                  {meal.note}
                 </div>
               </div>
-            ))}
+              );
+            })}
 
             <div style={CARD}>
-              <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 14 }}>📊 Daily Targets</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 14 }}>
+                <BarChart3 size={18} color={C.accentSoft} />
+                <div style={{ fontWeight: 700, fontSize: 16 }}>Daily Targets</div>
+              </div>
               {[
-                { label: "Water", value: "3 litres", icon: "💧" },
-                { label: "Treats", value: "Max 2x/week", icon: "🍦" },
-                { label: "Finish dinner by", value: "8:30 PM", icon: "🌙" },
-                { label: "Protein every meal", value: "Non-negotiable", icon: "💪" },
-                { label: "Steps", value: "7,000–8,000/day", icon: "🚶" }
+                { label: "Water", value: "3 litres", icon: Droplets },
+                { label: "Treats", value: "Max 2x/week", icon: Cookie },
+                { label: "Finish dinner by", value: "8:30 PM", icon: MoonStar },
+                { label: "Protein every meal", value: "Non-negotiable", icon: Dumbbell },
+                { label: "Steps", value: "7,000–8,000/day", icon: Footprints }
               ].map((item, i) => (
                 <div key={i} style={{
                   display: "flex",
@@ -1282,7 +1322,10 @@ export default function FitnessApp() {
                   fontSize: 14,
                   borderTop: i > 0 ? `1px solid ${C.border}` : "none"
                 }}>
-                  <span style={{ color: "#b8b8cc" }}>{item.icon} {item.label}</span>
+                  <span style={{ display: "flex", alignItems: "center", gap: 9, color: C.text }}>
+                    <item.icon size={16} color={C.textDim} />
+                    {item.label}
+                  </span>
                   <span style={{ color: C.accentSoft, fontWeight: 700 }}>{item.value}</span>
                 </div>
               ))}
@@ -1294,14 +1337,12 @@ export default function FitnessApp() {
           <div>
             <div style={CARD}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-                <div style={{ fontWeight: 700, fontSize: 17 }}>📅 Your Week</div>
+                <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+                  <CalendarDays size={18} color={C.accentSoft} />
+                  <div style={{ fontWeight: 700, fontSize: 17 }}>Your Week</div>
+                </div>
                 {!editingSchedule && (
-                  <button
-                    onClick={startEditingSchedule}
-                    style={{ background: "rgba(124,108,255,0.1)", border: "none", color: C.accentSoft, fontSize: 13, fontWeight: 600, cursor: "pointer", padding: "7px 12px", borderRadius: RADIUS.chip }}
-                  >
-                    ✏️ Edit Days
-                  </button>
+                  <Chip icon={Pencil} onClick={startEditingSchedule} tone="accent">Edit Days</Chip>
                 )}
               </div>
 
@@ -1321,7 +1362,7 @@ export default function FitnessApp() {
                             textAlign: "center",
                             padding: "14px 4px",
                             borderRadius: RADIUS.chip,
-                            background: selected ? "linear-gradient(135deg, #7c6cff, #b3a4ff)" : C.inset,
+                            background: selected ? C.accent : C.inset,
                             border: selected ? `1px solid ${C.accent}` : `1px solid ${C.border}`,
                             color: selected ? "#fff" : C.textDim,
                             fontSize: 13,
@@ -1340,7 +1381,7 @@ export default function FitnessApp() {
                       disabled={draftDays.length !== profile.daysPerWeek}
                       style={{
                         flex: 1,
-                        background: draftDays.length === profile.daysPerWeek ? "linear-gradient(135deg, #7c6cff, #b3a4ff)" : "rgba(255,255,255,0.06)",
+                        background: draftDays.length === profile.daysPerWeek ? C.accent : C.inset,
                         border: "none",
                         borderRadius: RADIUS.chip,
                         color: draftDays.length === profile.daysPerWeek ? "#fff" : C.textFaint,
@@ -1362,7 +1403,9 @@ export default function FitnessApp() {
                 </div>
               ) : (
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 7 }}>
-                  {plan.weekSchedule.map((d, i) => (
+                  {plan.weekSchedule.map((d, i) => {
+                    const DayIcon = d.active ? Dumbbell : (d.icon === "😴" ? MoonStar : Footprints);
+                    return (
                     <button
                       key={i}
                       onClick={() => d.trainingDayId && setSelectedDayId(d.trainingDayId)}
@@ -1370,16 +1413,17 @@ export default function FitnessApp() {
                         textAlign: "center",
                         padding: "12px 4px",
                         borderRadius: RADIUS.chip,
-                        background: d.active ? "rgba(124,108,255,0.16)" : C.inset,
+                        background: d.active ? C.accentBg : C.inset,
                         border: d.active ? `1px solid ${C.accent}` : `1px solid ${C.border}`,
                         cursor: d.trainingDayId ? "pointer" : "default"
                       }}
                     >
-                      <div style={{ fontSize: 17, marginBottom: 5 }}>{d.icon}</div>
+                      <DayIcon size={16} color={d.active ? C.accentSoft : C.textFaint} style={{ marginBottom: 6 }} />
                       <div style={{ fontSize: 12, fontWeight: 700, color: d.active ? C.accentSoft : C.textDim }}>{d.day} {d.dateNum}</div>
-                      <div style={{ fontSize: 11, color: d.active ? "#9d8fe0" : C.textFaint, marginTop: 3 }}>{d.label}</div>
+                      <div style={{ fontSize: 11, color: d.active ? C.accentSoft : C.textFaint, marginTop: 3 }}>{d.label}</div>
                     </button>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -1399,31 +1443,34 @@ export default function FitnessApp() {
           transform: "translateX(-50%)",
           width: "100%",
           maxWidth: 420,
-          background: "linear-gradient(135deg, #201c3d, #171a30)",
+          background: C.card,
           borderTop: `1px solid ${C.accent}`,
           padding: "16px 20px",
           boxSizing: "border-box",
           zIndex: 25,
-          boxShadow: "0 -8px 24px rgba(0,0,0,0.4)"
+          boxShadow: `0 -8px 24px ${C.shadow}`
         }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-            <div style={{ fontSize: 13, color: C.accentSoft, fontWeight: 700 }}>😮‍💨 Resting — {restTimer.exName}</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: C.accentSoft, fontWeight: 700 }}>
+              <Timer size={15} />
+              Resting — {restTimer.exName}
+            </div>
             <button
               onClick={() => setRestTimer(null)}
               style={{ background: "none", border: "none", color: C.textFaint, fontSize: 12, cursor: "pointer", fontWeight: 700 }}
             >
-              Skip ✕
+              Skip
             </button>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-            <div style={{ fontSize: 26, fontWeight: 800, color: "#fff", minWidth: 72 }}>
+            <div style={{ fontSize: 26, fontWeight: 800, color: C.text, minWidth: 72 }}>
               {restTimer.secondsLeft > 0
                 ? `${Math.floor(restTimer.secondsLeft / 60)}:${String(restTimer.secondsLeft % 60).padStart(2, "0")}`
-                : "Go! 💪"}
+                : "Go!"}
             </div>
-            <div style={{ flex: 1, background: "rgba(255,255,255,0.08)", borderRadius: RADIUS.pill, height: 10 }}>
+            <div style={{ flex: 1, background: C.inset, borderRadius: RADIUS.pill, height: 10 }}>
               <div style={{
-                background: "linear-gradient(90deg, #7c6cff, #b3a4ff)",
+                background: C.accent,
                 width: `${(restTimer.secondsLeft / restTimer.total) * 100}%`,
                 height: "100%",
                 borderRadius: RADIUS.pill,
@@ -1442,11 +1489,11 @@ export default function FitnessApp() {
         width: "100%",
         maxWidth: 420,
         display: "flex",
-        background: "#1c1c29",
+        background: C.tabBarBg,
         backdropFilter: "blur(20px)",
         WebkitBackdropFilter: "blur(20px)",
-        borderTop: "1px solid rgba(255,255,255,0.14)",
-        boxShadow: "0 -6px 24px rgba(0,0,0,0.45)",
+        borderTop: `1px solid ${C.border}`,
+        boxShadow: `0 -6px 24px ${C.shadow}`,
         paddingBottom: "env(safe-area-inset-bottom, 0px)",
         zIndex: 30
       }}>
@@ -1468,7 +1515,7 @@ export default function FitnessApp() {
               transition: "color 0.2s"
             }}
           >
-            <div style={{ fontSize: 23 }}>{tab.icon}</div>
+            <tab.icon size={22} strokeWidth={activeTab === tab.id ? 2.4 : 2} />
             <div style={{ fontSize: 11, fontWeight: activeTab === tab.id ? 700 : 500 }}>{tab.label}</div>
           </button>
         ))}
@@ -1547,7 +1594,7 @@ function ProfilePanel({ profile, onClose, onUpdate, onPickAvatar, onExport, onIm
               key={opt.value}
               onClick={() => onUpdate({ [key]: opt.value })}
               style={{
-                background: selected ? "linear-gradient(135deg, #7c6cff, #b3a4ff)" : C.inset,
+                background: selected ? C.accent : C.inset,
                 border: selected ? `1px solid ${C.accent}` : `1px solid ${C.border}`,
                 color: selected ? "#fff" : C.textDim,
                 borderRadius: RADIUS.chip,
@@ -1577,7 +1624,8 @@ function ProfilePanel({ profile, onClose, onUpdate, onPickAvatar, onExport, onIm
       margin: "0 auto"
     }}>
       <div style={{
-        background: "linear-gradient(160deg, #201c3d 0%, #171a30 55%, #0f1220 100%)",
+        background: C.headerGrad,
+        borderBottom: `1px solid ${C.border}`,
         padding: "24px 20px",
         display: "flex",
         alignItems: "center",
@@ -1586,9 +1634,9 @@ function ProfilePanel({ profile, onClose, onUpdate, onPickAvatar, onExport, onIm
         <div style={{ fontSize: 20, fontWeight: 800 }}>Your Profile</div>
         <button
           onClick={onClose}
-          style={{ background: "rgba(255,255,255,0.08)", border: "none", color: C.text, width: 32, height: 32, borderRadius: "50%", fontSize: 15, cursor: "pointer" }}
+          style={{ background: C.inset, border: "none", color: C.text, width: 32, height: 32, borderRadius: "50%", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
         >
-          ✕
+          <X size={16} />
         </button>
       </div>
 
@@ -1609,7 +1657,7 @@ function ProfilePanel({ profile, onClose, onUpdate, onPickAvatar, onExport, onIm
                 width: 88,
                 height: 88,
                 borderRadius: "50%",
-                background: "linear-gradient(135deg, #7c6cff, #b3a4ff)",
+                background: C.accent,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -1617,7 +1665,7 @@ function ProfilePanel({ profile, onClose, onUpdate, onPickAvatar, onExport, onIm
                 fontWeight: 800,
                 color: "#fff"
               }}>
-                {getInitials(profile.name)}
+                {getInitials(profile.name) || <Dumbbell size={32} color="#fff" />}
               </div>
             )}
             <div style={{
@@ -1631,10 +1679,9 @@ function ProfilePanel({ profile, onClose, onUpdate, onPickAvatar, onExport, onIm
               border: `2px solid ${C.bg}`,
               display: "flex",
               alignItems: "center",
-              justifyContent: "center",
-              fontSize: 14
+              justifyContent: "center"
             }}>
-              📷
+              <Camera size={14} color={C.text} />
             </div>
           </button>
           <div style={{ fontSize: 13, color: C.textFaint, marginTop: 10 }}>Tap to change photo</div>
@@ -1689,22 +1736,22 @@ function ProfilePanel({ profile, onClose, onUpdate, onPickAvatar, onExport, onIm
           <div style={{ display: "flex", gap: 10, marginBottom: 12 }}>
             <button
               onClick={onExport}
-              style={{ flex: 1, background: C.inset, border: `1px solid ${C.border}`, borderRadius: RADIUS.chip, color: C.text, padding: "12px 0", fontSize: 14, fontWeight: 700, cursor: "pointer" }}
+              style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 7, background: C.inset, border: `1px solid ${C.border}`, borderRadius: RADIUS.chip, color: C.text, padding: "12px 0", fontSize: 14, fontWeight: 700, cursor: "pointer" }}
             >
-              ⬇ Export backup
+              <Download size={15} /> Export
             </button>
             <button
               onClick={onImportClick}
-              style={{ flex: 1, background: C.inset, border: `1px solid ${C.border}`, borderRadius: RADIUS.chip, color: C.text, padding: "12px 0", fontSize: 14, fontWeight: 700, cursor: "pointer" }}
+              style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 7, background: C.inset, border: `1px solid ${C.border}`, borderRadius: RADIUS.chip, color: C.text, padding: "12px 0", fontSize: 14, fontWeight: 700, cursor: "pointer" }}
             >
-              ⬆ Import backup
+              <Upload size={15} /> Import
             </button>
           </div>
           <button
             onClick={handleRetake}
-            style={{ width: "100%", background: "rgba(248,113,113,0.1)", border: "1px solid rgba(248,113,113,0.25)", borderRadius: RADIUS.chip, color: C.danger, padding: "12px 0", fontSize: 14, fontWeight: 700, cursor: "pointer" }}
+            style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 7, background: C.dangerBg, border: "none", borderRadius: RADIUS.chip, color: C.danger, padding: "12px 0", fontSize: 14, fontWeight: 700, cursor: "pointer" }}
           >
-            Retake full questionnaire
+            <RotateCcw size={15} /> Retake full questionnaire
           </button>
         </div>
       </div>
@@ -1758,8 +1805,8 @@ function ProgressTab({ history }) {
         fontSize: 15,
         lineHeight: 1.6
       }}>
-        <div style={{ fontSize: 32, marginBottom: 10 }}>📈</div>
-        No workouts logged yet.<br />Finish a workout and it'll show up here.
+        <TrendingUp size={30} color={C.textFaint} style={{ marginBottom: 10 }} />
+        <div>No workouts logged yet.<br />Finish a workout and it'll show up here.</div>
       </div>
     );
   }
@@ -1788,7 +1835,10 @@ function ProgressTab({ history }) {
 
       {personalBests.length > 0 && (
         <div style={CARD}>
-          <div style={{ fontWeight: 700, fontSize: 17, marginBottom: 14 }}>🏆 Personal Bests</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 14 }}>
+            <Trophy size={18} color={C.accentSoft} />
+            <div style={{ fontWeight: 700, fontSize: 17 }}>Personal Bests</div>
+          </div>
           {personalBests.map((pb, i) => (
             <div key={i} style={{
               display: "flex",
@@ -1798,7 +1848,7 @@ function ProgressTab({ history }) {
               fontSize: 15,
               borderTop: i > 0 ? `1px solid ${C.border}` : "none"
             }}>
-              <span style={{ color: "#d4d4e0" }}>{pb.name}</span>
+              <span style={{ color: C.text }}>{pb.name}</span>
               <span style={{ color: C.successBright, fontWeight: 700 }}>{pb.label}</span>
             </div>
           ))}
@@ -1806,7 +1856,10 @@ function ProgressTab({ history }) {
       )}
 
       <div style={CARD}>
-        <div style={{ fontWeight: 700, fontSize: 17, marginBottom: 14 }}>📜 Recent Workouts</div>
+        <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 14 }}>
+          <History size={18} color={C.accentSoft} />
+          <div style={{ fontWeight: 700, fontSize: 17 }}>Recent Workouts</div>
+        </div>
         {sorted.slice(0, 20).map((entry, i) => {
           const setsDone = entry.exercises.reduce((a, ex) => a + ex.setsCompleted, 0);
           const setsTotal = entry.exercises.reduce((a, ex) => a + ex.totalSets, 0);
