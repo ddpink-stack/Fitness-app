@@ -1292,10 +1292,11 @@ export default function FitnessApp() {
         width: "100%",
         maxWidth: 420,
         display: "flex",
-        background: "rgba(19,19,28,0.94)",
+        background: "#1c1c29",
         backdropFilter: "blur(20px)",
         WebkitBackdropFilter: "blur(20px)",
-        borderTop: `1px solid ${C.border}`,
+        borderTop: "1px solid rgba(255,255,255,0.14)",
+        boxShadow: "0 -6px 24px rgba(0,0,0,0.45)",
         paddingBottom: "env(safe-area-inset-bottom, 0px)",
         zIndex: 30
       }}>
