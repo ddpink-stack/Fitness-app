@@ -4,7 +4,7 @@ import {
   Lightbulb, ChevronRight, CircleCheck, Target, Activity,
   CheckCircle2, NotebookPen, Search, X, Minus, Plus, MessageCircle, BarChart3, Droplets,
   Cookie, MoonStar, Footprints, Pencil, Timer, Camera, Download, Upload, RotateCcw,
-  Trophy, History, Sunrise, Sun, Moon, GlassWater, PartyPopper
+  Trophy, History, Sunrise, Sun, Moon, GlassWater, PartyPopper, Wind, Zap
 } from "lucide-react";
 import Questionnaire from "./components/Questionnaire.jsx";
 import { generateWeekPlan, computeWeightsBySet, getSwapPool } from "./lib/planGenerator.js";
@@ -19,7 +19,7 @@ const SWAPS_KEY = "fitness-app:swaps";
 const CUSTOM_DAYS_KEY = "fitness-app:customDays";
 const FOOD_LOG_KEY = "fitness-app:foodLog";
 const WEEKDAY_NAMES = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-const MEAL_ICONS = { Breakfast: Sunrise, Lunch: Sun, Dinner: Moon, "Post Workout": GlassWater };
+const MEAL_ICONS = { Breakfast: Sunrise, Lunch: Sun, Dinner: Moon, "Pre Workout": Zap, "Post Workout": GlassWater };
 
 // Shared design tokens — CSS custom properties (defined in index.css)
 // so the whole app follows the system light/dark setting automatically,
@@ -918,6 +918,29 @@ export default function FitnessApp() {
                   <span style={{ color: C.accentSoft, fontWeight: 600 }}>{row.time}</span>
                   <span>{row.speed}</span>
                   <span style={{ color: C.accentSoft }}>{row.incline}</span>
+                </div>
+              ))}
+            </div>
+
+            <div style={CARD}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+                <Wind size={20} color={C.accentSoft} />
+                <span style={{ fontWeight: 700, fontSize: 17 }}>Cooldown — {workout.cooldown.duration}</span>
+                <span style={{
+                  marginLeft: "auto",
+                  fontSize: 11,
+                  fontWeight: 700,
+                  color: C.accentSoft,
+                  background: C.accentBg,
+                  padding: "4px 10px",
+                  borderRadius: RADIUS.pill
+                }}>
+                  Recommended
+                </span>
+              </div>
+              {workout.cooldown.stretches.map((item, i) => (
+                <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 0", fontSize: 15, color: C.text }}>
+                  <span style={{ color: C.accentSoft, fontSize: 8 }}>●</span> {item}
                 </div>
               ))}
             </div>

@@ -22,11 +22,18 @@ export const mealPlansByDiet = {
       note: "Lighter than lunch. Finish by 8:30pm."
     },
     {
+      time: "Pre Workout",
+      icon: "⚡",
+      time_label: "45–60 min before",
+      options: ["1 banana + 1 tbsp peanut butter", "2 rusks/toast with black coffee", "A handful of dates + soaked almonds"],
+      note: "Keep it light — quick carbs for energy, easy to digest. Skip anything heavy or fatty right before training."
+    },
+    {
       time: "Post Workout",
       icon: "🥤",
-      time_label: "After gym",
-      options: ["1 scoop whey protein with water or milk"],
-      note: "MuscleBlaze Biozyme or ON Gold Standard recommended"
+      time_label: "Within 30–45 min after",
+      options: ["1 scoop whey protein with water or milk", "Or 4–5 egg whites + a banana if no shaker on hand", "Add a banana or 2 rusks for fast-digesting carbs"],
+      note: "MuscleBlaze Biozyme or ON Gold Standard recommended for the shake"
     }
   ],
   vegan: [
@@ -52,10 +59,17 @@ export const mealPlansByDiet = {
       note: "Lighter than lunch. Finish by 8:30pm."
     },
     {
+      time: "Pre Workout",
+      icon: "⚡",
+      time_label: "45–60 min before",
+      options: ["1 banana + 1 tbsp peanut butter", "2 rusks/toast with black coffee", "A handful of dates + soaked almonds"],
+      note: "Keep it light — quick carbs for energy, easy to digest. Skip anything heavy or fatty right before training."
+    },
+    {
       time: "Post Workout",
       icon: "🥤",
-      time_label: "After gym",
-      options: ["1 scoop pea/soy protein with water or soy milk"],
+      time_label: "Within 30–45 min after",
+      options: ["1 scoop pea/soy protein with water or soy milk", "Or a banana + handful of soaked chana if no shaker on hand", "Add 2 rusks for fast-digesting carbs"],
       note: "Look for a vegan-certified blend (e.g. pea + rice protein)"
     }
   ],
@@ -82,11 +96,18 @@ export const mealPlansByDiet = {
       note: "Lighter than lunch. Finish by 8:30pm."
     },
     {
+      time: "Pre Workout",
+      icon: "⚡",
+      time_label: "45–60 min before",
+      options: ["1 banana + 1 tbsp peanut butter", "2 rusks/toast with black coffee", "A handful of dates + soaked almonds"],
+      note: "Keep it light — quick carbs for energy, easy to digest. Skip anything heavy or fatty right before training."
+    },
+    {
       time: "Post Workout",
       icon: "🥤",
-      time_label: "After gym",
-      options: ["1 scoop whey protein with water or milk"],
-      note: "MuscleBlaze Biozyme or ON Gold Standard recommended"
+      time_label: "Within 30–45 min after",
+      options: ["1 scoop whey protein with water or milk", "Or 4–5 boiled egg whites + a banana if no shaker on hand", "Add a banana or 2 rusks for fast-digesting carbs"],
+      note: "MuscleBlaze Biozyme or ON Gold Standard recommended for the shake"
     }
   ]
 };

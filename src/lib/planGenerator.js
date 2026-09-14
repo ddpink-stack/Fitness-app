@@ -1,5 +1,6 @@
 import { exerciseLibrary, availableEquipment } from "../data/exercises.js";
 import { mealPlansByDiet } from "../data/meals.js";
+import { buildCooldown } from "../data/cooldown.js";
 
 const setsByLevel = { beginner: 3, intermediate: 3, advanced: 4 };
 const restByLevel = { beginner: "60 sec rest", intermediate: "60 sec rest", advanced: "45 sec rest" };
@@ -221,6 +222,10 @@ export function generateWeekPlan(profile, referenceDate = new Date(), customTrai
           { time: `5–${cardioMinutes - 5} min`, speed: "5.5 kmph", incline: "Incline 5" },
           { time: `${cardioMinutes - 5}–${cardioMinutes} min`, speed: "4.0 kmph", incline: "Incline 2 (cool down)" }
         ]
+      },
+      cooldown: {
+        duration: "5 min",
+        stretches: buildCooldown(dayTemplate.categories)
       }
     };
   });
