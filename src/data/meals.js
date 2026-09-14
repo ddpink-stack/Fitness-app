@@ -117,3 +117,17 @@ export const dietLabels = {
   vegan: "Vegan",
   nonveg: "Non-vegetarian"
 };
+
+// Goal-specific portion guidance layered onto the biggest meals of the
+// day — the food options themselves stay the same across goals, but how
+// much of them you eat shouldn't.
+export const goalMealHints = {
+  "fat-loss": {
+    Lunch: "Keep the rice/chapati portion modest here — lead with protein and veg.",
+    Dinner: "Keep this lighter than lunch and skip seconds."
+  },
+  "muscle-gain": {
+    Lunch: "Bulking — add an extra chapati or a bigger rice portion here.",
+    Dinner: "Not gaining over a couple of weeks? Add an extra portion here first."
+  }
+};

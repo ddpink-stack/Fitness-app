@@ -2,8 +2,10 @@ import { exerciseLibrary, availableEquipment } from "../data/exercises.js";
 import { mealPlansByDiet } from "../data/meals.js";
 import { buildCooldown } from "../data/cooldown.js";
 
-const setsByLevel = { beginner: 3, intermediate: 3, advanced: 4 };
-const restByLevel = { beginner: "60 sec rest", intermediate: "60 sec rest", advanced: "45 sec rest" };
+// "returning" (trained before, 2+ months off) gets beginner-like volume —
+// coaching guidance is to rebuild volume before intensity during a comeback.
+const setsByLevel = { beginner: 3, returning: 3, intermediate: 3, advanced: 4 };
+const restByLevel = { beginner: "60 sec rest", returning: "60 sec rest", intermediate: "60 sec rest", advanced: "45 sec rest" };
 const cardioMinutesByGoal = { "fat-loss": 25, "general-fitness": 20, "muscle-gain": 15 };
 
 // Each entry lists the muscle categories trained that day. A repeated
@@ -113,11 +115,30 @@ function personalizationScale(category, profile) {
   return Math.min(1.8, Math.max(0.45, scale));
 }
 
+// "returning" (trained before, 2+ months off) has no hand-authored weight
+// tier — it's derived 40% of the way from beginner to intermediate.
+// Coaching guidance on retraining after a break says muscle memory lets
+// returning lifters regain load faster than a true beginner, but they
+// should still start well below where they left off, not at intermediate.
+const RETURNING_BLEND_TOWARD_INTERMEDIATE = 0.4;
+
+function getWeightRange(weightConf, level) {
+  if (weightConf[level]) return weightConf[level];
+  if (level === "returning" && weightConf.beginner && weightConf.intermediate) {
+    const t = RETURNING_BLEND_TOWARD_INTERMEDIATE;
+    return {
+      min: weightConf.beginner.min + (weightConf.intermediate.min - weightConf.beginner.min) * t,
+      max: weightConf.beginner.max + (weightConf.intermediate.max - weightConf.beginner.max) * t
+    };
+  }
+  return weightConf.beginner ?? null;
+}
+
 // Shared by initial plan generation and exercise swaps, so both produce
 // identical personalized numbers for the same exercise/level/profile.
 export function computeWeightsBySet(exercise, category, level, sets, profile) {
   const weightConf = exercise.suggestedWeight;
-  const range = weightConf ? weightConf[level] : null;
+  const range = weightConf ? getWeightRange(weightConf, level) : null;
   if (!range) return null;
   const scale = personalizationScale(category === "core" ? "pull" : category, profile);
   let min = range.min * scale;
@@ -141,7 +162,7 @@ export function getSwapPool(category, available) {
 // who's eating and what they're training for, unlike a flat number.
 const kcalPerKgByGoal = { "fat-loss": 25, "general-fitness": 29, "muscle-gain": 36 };
 const proteinPerKgByGoal = { "fat-loss": 2.0, "general-fitness": 1.6, "muscle-gain": 1.8 };
-const activityFactorByLevel = { beginner: 0.95, intermediate: 1.0, advanced: 1.08 };
+const activityFactorByLevel = { beginner: 0.95, returning: 0.95, intermediate: 1.0, advanced: 1.08 };
 const goalTips = {
   "fat-loss": "Keep protein and veg high, go moderate on rice/chapati — the numbers above are your ceiling, not a target to hit exactly.",
   "muscle-gain": "Don't undereat — if you're not gaining over a couple of weeks, add an extra portion (rice, chapati, or a protein shake).",
@@ -168,13 +189,24 @@ export function computeNutritionTargets(profile) {
   };
 }
 
-function pickExercise(category, dayIndex, slotIndex, available, used) {
+// Loading/technical complexity within a category, 1 (easiest) to 3
+// (hardest) — see the `difficulty` field on each exerciseLibrary entry.
+// A beginner should land on the easiest movement available; a returning
+// lifter can handle the same complexity as an intermediate (technique
+// carries over from before their break, even though their load won't).
+const difficultyByLevel = { beginner: 1, returning: 2, intermediate: 2, advanced: 3 };
+
+function pickExercise(category, dayIndex, slotIndex, available, used, level) {
   const pool = exerciseLibrary[category].filter(
     (ex) => ex.equipment.some((e) => available.includes(e)) && !used.has(ex.id)
   );
-  const chosen = pool.length > 0
-    ? pool[(dayIndex + slotIndex) % pool.length]
-    : exerciseLibrary[category][(dayIndex + slotIndex) % exerciseLibrary[category].length];
+  const source = pool.length > 0 ? pool : exerciseLibrary[category];
+  const target = difficultyByLevel[level] ?? 2;
+  const closestDiff = Math.min(...source.map((ex) => Math.abs((ex.difficulty ?? 2) - target)));
+  // Among exercises equally close to the target difficulty, rotate through
+  // them by day/slot so the plan doesn't pick the exact same one forever.
+  const candidates = source.filter((ex) => Math.abs((ex.difficulty ?? 2) - target) === closestDiff);
+  const chosen = candidates[(dayIndex + slotIndex) % candidates.length];
   used.add(chosen.id);
   return chosen;
 }
@@ -198,7 +230,7 @@ export function generateWeekPlan(profile, referenceDate = new Date(), customTrai
   const trainingDays = template.map((dayTemplate, dayIndex) => {
     const used = new Set();
     const exercises = dayTemplate.categories.map((category, slotIndex) => {
-      const picked = pickExercise(category, dayIndex, slotIndex, available, used);
+      const picked = pickExercise(category, dayIndex, slotIndex, available, used, level);
       const weightsBySet = computeWeightsBySet(picked, category, level, sets, profile);
       return { ...picked, sets, rest, category, weightsBySet };
     });

@@ -25,6 +25,7 @@ const questions = [
     label: "What's your experience level?",
     options: [
       { value: "beginner", label: "Beginner", desc: "New to structured training" },
+      { value: "returning", label: "Returning After a Break", desc: "Trained before, took 2+ months off" },
       { value: "intermediate", label: "Intermediate", desc: "6+ months consistent" },
       { value: "advanced", label: "Advanced", desc: "2+ years, know your lifts" }
     ]

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Dumbbell, Utensils, Calendar, CalendarDays, TrendingUp, Flame, Info, Video, RefreshCw,
   Lightbulb, ChevronRight, ChevronDown, ChevronUp, CircleCheck, Target, Activity,
-  CheckCircle2, NotebookPen, Search, X, Minus, Plus, MessageCircle, BarChart3, Droplets,
+  CheckCircle2, Search, X, Minus, Plus, MessageCircle, BarChart3, Droplets,
   Cookie, MoonStar, Footprints, Pencil, Timer, Camera, Download, Upload, RotateCcw,
   Trophy, History, Sunrise, Sun, Moon, GlassWater, PartyPopper, Wind, Zap
 } from "lucide-react";
@@ -11,6 +11,7 @@ import { generateWeekPlan, computeWeightsBySet, getSwapPool } from "./lib/planGe
 import { availableEquipment, categoryPurpose } from "./data/exercises.js";
 import { foodDatabase, genericFoodCategories } from "./data/foods.js";
 import { ExerciseIcon } from "./data/exerciseIcons.jsx";
+import { goalMealHints } from "./data/meals.js";
 
 const PROFILE_KEY = "fitness-app:profile";
 const PROGRESS_KEY = "fitness-app:progress";
@@ -18,6 +19,7 @@ const HISTORY_KEY = "fitness-app:history";
 const SWAPS_KEY = "fitness-app:swaps";
 const CUSTOM_DAYS_KEY = "fitness-app:customDays";
 const FOOD_LOG_KEY = "fitness-app:foodLog";
+const WEIGHT_MEMORY_KEY = "fitness-app:weightMemory";
 const WEEKDAY_NAMES = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const MEAL_ICONS = { Breakfast: Sunrise, Lunch: Sun, Dinner: Moon, "Pre Workout": Zap, "Post Workout": GlassWater };
 
@@ -105,6 +107,7 @@ const PROFILE_FIELD_OPTIONS = {
   ],
   level: [
     { value: "beginner", label: "Beginner" },
+    { value: "returning", label: "Returning After a Break" },
     { value: "intermediate", label: "Intermediate" },
     { value: "advanced", label: "Advanced" }
   ],
@@ -259,7 +262,7 @@ function BottomSheet({ title, onClose, children }) {
   );
 }
 
-function MealCard({ meal, icon: Icon, collapsible = false, defaultOpen = false }) {
+function MealCard({ meal, icon: Icon, collapsible = false, defaultOpen = false, extraNote }) {
   const [open, setOpen] = useState(defaultOpen);
   const isOpen = !collapsible || open;
   return (
@@ -310,9 +313,89 @@ function MealCard({ meal, icon: Icon, collapsible = false, defaultOpen = false }
             <MessageCircle size={15} style={{ flexShrink: 0, marginTop: 1 }} />
             {meal.note}
           </div>
+          {extraNote && (
+            <div style={{
+              display: "flex",
+              alignItems: "flex-start",
+              gap: 8,
+              marginTop: 8,
+              padding: "10px 14px",
+              background: C.accentBg,
+              borderRadius: RADIUS.chip,
+              fontSize: 13,
+              color: C.accentSoft,
+              fontWeight: 600
+            }}>
+              <Target size={15} style={{ flexShrink: 0, marginTop: 1 }} />
+              {extraNote}
+            </div>
+          )}
         </div>
       )}
     </div>
+  );
+}
+
+function WeightEditSheet({ sheet, hasOverride, onSave, onReset, onClose }) {
+  const [value, setValue] = useState(sheet.currentText);
+  return (
+    <BottomSheet title={`${sheet.ex.name} — Set ${sheet.setIndex + 1}`} onClose={onClose}>
+      <div style={{ fontSize: 13, color: C.textDim, marginBottom: 14, lineHeight: 1.55 }}>
+        Not the right weight? Enter what you actually used — we'll remember it for this exercise from now on.
+      </div>
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        autoFocus
+        style={{
+          width: "100%",
+          background: C.inset,
+          border: `1px solid ${C.border}`,
+          borderRadius: RADIUS.chip,
+          color: C.text,
+          padding: 14,
+          fontSize: 17,
+          fontWeight: 700,
+          boxSizing: "border-box"
+        }}
+      />
+      <button
+        onClick={() => onSave(value)}
+        style={{
+          marginTop: 14,
+          width: "100%",
+          background: C.accent,
+          border: "none",
+          borderRadius: RADIUS.chip,
+          color: "#fff",
+          fontWeight: 700,
+          fontSize: 15,
+          padding: "14px 20px",
+          cursor: "pointer"
+        }}
+      >
+        Save
+      </button>
+      {hasOverride && (
+        <button
+          onClick={onReset}
+          style={{
+            marginTop: 10,
+            width: "100%",
+            background: "none",
+            border: "none",
+            color: C.textDim,
+            fontSize: 14,
+            fontWeight: 600,
+            cursor: "pointer",
+            padding: 8
+          }}
+        >
+          Reset to suggested
+        </button>
+      )}
+    </BottomSheet>
   );
 }
 
@@ -323,10 +406,10 @@ export default function FitnessApp() {
   const [swaps, setSwaps] = useState(() => loadJSON(SWAPS_KEY, {}));
   const [customDays, setCustomDays] = useState(() => loadJSON(CUSTOM_DAYS_KEY, null));
   const [foodLog, setFoodLog] = useState(() => loadJSON(FOOD_LOG_KEY, {}));
+  const [weightMemory, setWeightMemory] = useState(() => loadJSON(WEIGHT_MEMORY_KEY, {})); // { [exerciseId]: { [setIndex]: overrideText } }
   const [activeTab, setActiveTab] = useState("workout");
   const [selectedDayId, setSelectedDayId] = useState(null);
   const [sheet, setSheet] = useState(null); // { type: "tip"|"video"|"info", ex, exUid }
-  const [savedNote, setSavedNote] = useState(false);
   const [restTimer, setRestTimer] = useState(null); // { exUid, exName, total, secondsLeft }
   const [editingSchedule, setEditingSchedule] = useState(false);
   const [draftDays, setDraftDays] = useState([]);
@@ -370,6 +453,10 @@ export default function FitnessApp() {
   }, [foodLog]);
 
   useEffect(() => {
+    saveJSON(WEIGHT_MEMORY_KEY, weightMemory);
+  }, [weightMemory]);
+
+  useEffect(() => {
     if (!restTimer) return;
     if (restTimer.secondsLeft > 0) {
       const id = setTimeout(() => {
@@ -392,27 +479,38 @@ export default function FitnessApp() {
   }, [workout, progress]);
 
   // Applies any exercise swaps the user made for this day on top of the
-  // generated plan, recomputing personalized weights for the swapped-in move.
+  // generated plan (recomputing personalized weights for the swapped-in
+  // move), then layers on any weights the user has manually corrected —
+  // those take priority over the formula from here on for that exercise.
   const displayedWorkout = useMemo(() => {
     if (!workout || !profile) return workout;
     const daySwaps = swaps[workout.id] || {};
-    if (Object.keys(daySwaps).length === 0) return workout;
     const available = availableEquipment(profile.equipment);
     return {
       ...workout,
       exercises: workout.exercises.map((ex, i) => {
+        let resolved = ex;
         const rotation = daySwaps[i] || 0;
-        if (rotation === 0) return ex;
-        const pool = getSwapPool(ex.category, available);
-        if (pool.length <= 1) return ex;
-        const baseIdx = pool.findIndex((p) => p.id === ex.id);
-        const alt = pool[(baseIdx + rotation) % pool.length];
-        if (!alt || alt.id === ex.id) return ex;
-        const weightsBySet = computeWeightsBySet(alt, ex.category, profile.level, ex.sets, profile);
-        return { ...alt, sets: ex.sets, rest: ex.rest, category: ex.category, weightsBySet };
+        if (rotation !== 0) {
+          const pool = getSwapPool(ex.category, available);
+          if (pool.length > 1) {
+            const baseIdx = pool.findIndex((p) => p.id === ex.id);
+            const alt = pool[(baseIdx + rotation) % pool.length];
+            if (alt && alt.id !== ex.id) {
+              const weightsBySet = computeWeightsBySet(alt, ex.category, profile.level, ex.sets, profile);
+              resolved = { ...alt, sets: ex.sets, rest: ex.rest, category: ex.category, weightsBySet };
+            }
+          }
+        }
+        const overrides = weightMemory[resolved.id];
+        if (overrides && resolved.weightsBySet) {
+          const weightsBySet = resolved.weightsBySet.map((w, si) => overrides[si] ?? w);
+          resolved = { ...resolved, weightsBySet };
+        }
+        return resolved;
       })
     };
-  }, [workout, swaps, profile]);
+  }, [workout, swaps, profile, weightMemory]);
 
   const totalSets = useMemo(
     () => (displayedWorkout ? displayedWorkout.exercises.reduce((acc, ex) => acc + ex.sets, 0) : 0),
@@ -490,7 +588,7 @@ export default function FitnessApp() {
   };
 
   const exportBackup = () => {
-    const payload = { exportedAt: new Date().toISOString(), profile, progress, history, swaps, customDays, foodLog };
+    const payload = { exportedAt: new Date().toISOString(), profile, progress, history, swaps, customDays, foodLog, weightMemory };
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -530,6 +628,10 @@ export default function FitnessApp() {
         if (data.foodLog) {
           saveJSON(FOOD_LOG_KEY, data.foodLog);
           setFoodLog(data.foodLog);
+        }
+        if (data.weightMemory) {
+          saveJSON(WEIGHT_MEMORY_KEY, data.weightMemory);
+          setWeightMemory(data.weightMemory);
         }
       } catch {
         window.alert("That file doesn't look like a valid backup.");
@@ -683,8 +785,30 @@ export default function FitnessApp() {
     setRestTimer(null);
   };
 
-  const openSheet = (type, ex, exUid) => setSheet({ type, ex, exUid });
+  const openSheet = (type, ex, exUid, extra = {}) => setSheet({ type, ex, exUid, ...extra });
   const closeSheet = () => setSheet(null);
+
+  // Saves a user-corrected weight for one exercise+set slot; it's keyed by
+  // exercise id (not the day), so the correction sticks the next time this
+  // exercise shows up on any day, overriding the formula's suggestion.
+  const saveWeightOverride = (exerciseId, setIndex, text) => {
+    setWeightMemory((current) => ({
+      ...current,
+      [exerciseId]: { ...current[exerciseId], [setIndex]: text }
+    }));
+    closeSheet();
+  };
+
+  const resetWeightOverride = (exerciseId, setIndex) => {
+    setWeightMemory((current) => {
+      if (!current[exerciseId]) return current;
+      const { [setIndex]: _removed, ...rest } = current[exerciseId];
+      const next = { ...current, [exerciseId]: rest };
+      if (Object.keys(rest).length === 0) delete next[exerciseId];
+      return next;
+    });
+    closeSheet();
+  };
 
   const tabs = [
     { id: "workout", label: "Workout", icon: Dumbbell },
@@ -887,37 +1011,45 @@ export default function FitnessApp() {
                       const key = `${exUid}-${i + 1}`;
                       const done = dayProgress.completedSets[key];
                       return (
-                        <button
-                          key={i}
-                          onClick={() => toggleSet(exUid, i + 1, ex.name, ex.rest, i === ex.sets - 1)}
-                          style={{
-                            flex: 1,
-                            padding: "15px 0",
-                            borderRadius: RADIUS.control,
-                            border: done ? "none" : `1px solid ${C.border}`,
-                            background: done ? C.accent : C.inset,
-                            color: done ? "#fff" : C.textDim,
-                            fontWeight: 700,
-                            fontSize: 16,
-                            cursor: "pointer",
-                            transition: "all 0.2s",
-                            display: "flex",
-                            flexDirection: "column",
-                            alignItems: "center"
-                          }}
-                        >
-                          {done ? <CircleCheck size={18} /> : `Set ${i + 1}`}
+                        <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", gap: 4 }}>
+                          <button
+                            onClick={() => toggleSet(exUid, i + 1, ex.name, ex.rest, i === ex.sets - 1)}
+                            style={{
+                              width: "100%",
+                              padding: "15px 0",
+                              borderRadius: RADIUS.control,
+                              border: done ? "none" : `1px solid ${C.border}`,
+                              background: done ? C.accent : C.inset,
+                              color: done ? "#fff" : C.textDim,
+                              fontWeight: 700,
+                              fontSize: 16,
+                              cursor: "pointer",
+                              transition: "all 0.2s",
+                              boxSizing: "border-box"
+                            }}
+                          >
+                            {done ? <CircleCheck size={18} /> : `Set ${i + 1}`}
+                          </button>
                           {ex.weightsBySet && (
-                            <div style={{
-                              fontSize: 11,
-                              fontWeight: 600,
-                              marginTop: 3,
-                              opacity: done ? 0.9 : 0.7
-                            }}>
+                            <button
+                              onClick={() => openSheet("weight", ex, exUid, { setIndex: i, currentText: ex.weightsBySet[i] })}
+                              style={{
+                                background: "none",
+                                border: "none",
+                                padding: "2px 0",
+                                fontSize: 11,
+                                fontWeight: 600,
+                                color: C.accentSoft,
+                                cursor: "pointer",
+                                textDecoration: "underline",
+                                textDecorationStyle: "dotted",
+                                textUnderlineOffset: 2
+                              }}
+                            >
                               {ex.weightsBySet[i]}
-                            </div>
+                            </button>
                           )}
-                        </button>
+                        </div>
                       );
                     })}
                   </div>
@@ -1037,48 +1169,6 @@ export default function FitnessApp() {
                 Finish Workout
               </button>
             )}
-
-            <div style={CARD}>
-              <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 12 }}>
-                <NotebookPen size={18} color={C.accentSoft} />
-                <div style={{ fontWeight: 700, fontSize: 16 }}>Post-Workout Notes</div>
-              </div>
-              <textarea
-                placeholder="How did it feel? Any exercise that was hard? Weights used?"
-                value={dayProgress.notes}
-                onChange={(e) => setDayProgress((current) => ({ ...current, notes: e.target.value }))}
-                style={{
-                  width: "100%",
-                  background: C.inset,
-                  border: `1px solid ${C.border}`,
-                  borderRadius: RADIUS.chip,
-                  color: C.text,
-                  padding: 14,
-                  fontSize: 15,
-                  minHeight: 90,
-                  resize: "none",
-                  fontFamily: "inherit",
-                  boxSizing: "border-box"
-                }}
-              />
-              <button
-                onClick={() => setSavedNote(true)}
-                style={{
-                  marginTop: 10,
-                  background: C.accent,
-                  border: "none",
-                  borderRadius: RADIUS.chip,
-                  color: "#fff",
-                  fontWeight: 700,
-                  fontSize: 15,
-                  padding: "13px 20px",
-                  cursor: "pointer",
-                  width: "100%"
-                }}
-              >
-                {savedNote ? "Saved" : "Save Notes"}
-              </button>
-            </div>
 
             {progressPct === 100 && (
               <div style={{
@@ -1326,7 +1416,12 @@ export default function FitnessApp() {
             {plan.nutrition
               .filter((meal) => meal.time !== "Pre Workout" && meal.time !== "Post Workout")
               .map((meal, i) => (
-                <MealCard key={i} meal={meal} icon={MEAL_ICONS[meal.time] ?? Utensils} />
+                <MealCard
+                  key={i}
+                  meal={meal}
+                  icon={MEAL_ICONS[meal.time] ?? Utensils}
+                  extraNote={goalMealHints[profile.goal]?.[meal.time]}
+                />
               ))}
 
             <div style={CARD}>
@@ -1607,6 +1702,16 @@ export default function FitnessApp() {
             <div style={{ fontSize: 15, color: C.text, lineHeight: 1.6 }}>{sheet.ex.tip}</div>
           </div>
         </BottomSheet>
+      )}
+
+      {sheet && sheet.type === "weight" && (
+        <WeightEditSheet
+          sheet={sheet}
+          hasOverride={Boolean(weightMemory[sheet.ex.id]?.[sheet.setIndex] != null)}
+          onSave={(text) => saveWeightOverride(sheet.ex.id, sheet.setIndex, text)}
+          onReset={() => resetWeightOverride(sheet.ex.id, sheet.setIndex)}
+          onClose={closeSheet}
+        />
       )}
 
       {sheet && sheet.type === "video" && (

@@ -25,7 +25,8 @@ export const exerciseLibrary = {
       tip: "Don't let your hips sag. If too easy, go lower surface.",
       videoId: "0JUrOH--Kdk",
       emoji: "🤸",
-      muscles: ["Chest", "Shoulders", "Triceps"]
+      muscles: ["Chest", "Shoulders", "Triceps"],
+      difficulty: 1
     },
     {
       id: "dumbbell-bench-press",
@@ -37,6 +38,7 @@ export const exerciseLibrary = {
       videoId: "kgr3lCKx6_M",
       emoji: "🏋️",
       muscles: ["Chest", "Shoulders", "Triceps"],
+      difficulty: 2,
       suggestedWeight: {
         unit: "kg each hand",
         step: 1,
@@ -55,6 +57,7 @@ export const exerciseLibrary = {
       videoId: "1jYq9QQEWqE",
       emoji: "💪",
       muscles: ["Shoulders", "Triceps"],
+      difficulty: 2,
       suggestedWeight: {
         unit: "kg each hand",
         step: 1,
@@ -73,6 +76,7 @@ export const exerciseLibrary = {
       videoId: "Pp8rHcFVIYg",
       emoji: "🏋️",
       muscles: ["Chest", "Shoulders", "Triceps"],
+      difficulty: 3,
       suggestedWeight: {
         unit: "kg total",
         step: 2.5,
@@ -94,6 +98,7 @@ export const exerciseLibrary = {
       videoId: "fURsHPHgssI",
       emoji: "💪",
       muscles: ["Back", "Biceps"],
+      difficulty: 2,
       suggestedWeight: {
         unit: "kg",
         step: 1,
@@ -111,7 +116,8 @@ export const exerciseLibrary = {
       tip: "Keep your body rigid — no sagging hips.",
       videoId: "Fl0UMfdEzsE",
       emoji: "🧗",
-      muscles: ["Back", "Biceps"]
+      muscles: ["Back", "Biceps"],
+      difficulty: 1
     },
     {
       id: "lat-pulldown",
@@ -123,6 +129,7 @@ export const exerciseLibrary = {
       videoId: "Z_3xHwuO8Tk",
       emoji: "🎯",
       muscles: ["Back (lats)", "Biceps"],
+      difficulty: 2,
       suggestedWeight: {
         unit: "kg",
         step: 5,
@@ -141,6 +148,7 @@ export const exerciseLibrary = {
       videoId: "Lf4LUL3FeUM",
       emoji: "🏋️",
       muscles: ["Back", "Biceps", "Rear shoulders"],
+      difficulty: 3,
       suggestedWeight: {
         unit: "kg total",
         step: 2.5,
@@ -162,6 +170,7 @@ export const exerciseLibrary = {
       videoId: "k_EhLGvM8TQ",
       emoji: "🏋️",
       muscles: ["Quads", "Glutes"],
+      difficulty: 2,
       suggestedWeight: {
         unit: "kg",
         step: 1,
@@ -179,7 +188,8 @@ export const exerciseLibrary = {
       tip: "Go as low as feels controlled — depth over speed.",
       videoId: "P-yaD24bUE8",
       emoji: "🦵",
-      muscles: ["Quads", "Glutes"]
+      muscles: ["Quads", "Glutes"],
+      difficulty: 1
     },
     {
       id: "lunges",
@@ -190,7 +200,8 @@ export const exerciseLibrary = {
       tip: "Keep your torso upright, don't lean forward.",
       videoId: "BenhAbJiTsw",
       emoji: "🚶",
-      muscles: ["Quads", "Glutes", "Hamstrings"]
+      muscles: ["Quads", "Glutes", "Hamstrings"],
+      difficulty: 1
     },
     {
       id: "leg-press",
@@ -202,6 +213,7 @@ export const exerciseLibrary = {
       videoId: "8nm863C0c60",
       emoji: "🦿",
       muscles: ["Quads", "Glutes", "Hamstrings"],
+      difficulty: 3,
       suggestedWeight: {
         unit: "kg (plus sled)",
         step: 5,
@@ -221,7 +233,8 @@ export const exerciseLibrary = {
       tip: "Don't hold your breath. Quality over duration.",
       videoId: "62SXSsM8A2o",
       emoji: "🧘",
-      muscles: ["Abs", "Lower back stability"]
+      muscles: ["Abs", "Lower back stability"],
+      difficulty: 1
     },
     {
       id: "russian-twist",
@@ -232,7 +245,8 @@ export const exerciseLibrary = {
       tip: "Move slowly — twisting fast just uses momentum, not your core.",
       videoId: "fPxO-FA8acM",
       emoji: "🌀",
-      muscles: ["Obliques", "Abs"]
+      muscles: ["Obliques", "Abs"],
+      difficulty: 2
     }
   ]
 };
