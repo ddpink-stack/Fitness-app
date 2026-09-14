@@ -14,9 +14,9 @@ const splitTemplates = {
     { label: "Full Body — Day 3", categories: ["legs", "push", "pull", "core"] }
   ],
   4: [
-    { label: "Upper Body — Push Focus", categories: ["push", "pull", "push", "core"] },
+    { label: "Upper Body — Day 1", categories: ["push", "pull", "push", "core"] },
     { label: "Lower Body — Day 1", categories: ["legs", "legs", "core"] },
-    { label: "Upper Body — Pull Focus", categories: ["pull", "push", "pull", "core"] },
+    { label: "Upper Body — Day 2", categories: ["pull", "push", "pull", "core"] },
     { label: "Lower Body — Day 2", categories: ["legs", "legs", "core"] }
   ],
   5: [
