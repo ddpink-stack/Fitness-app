@@ -40,6 +40,13 @@ function todayKey() {
   return new Date().toISOString().slice(0, 10);
 }
 
+function isSameCalendarDay(isoDate) {
+  if (!isoDate) return false;
+  const d = new Date(isoDate);
+  const now = new Date();
+  return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
+}
+
 function getInitials(name) {
   if (!name || !name.trim()) return "🙂";
   return name.trim().split(/\s+/).map((p) => p[0]).slice(0, 2).join("").toUpperCase();
@@ -599,7 +606,10 @@ export default function FitnessApp() {
           ))}
         </div>
 
-        <div style={{ fontSize: 30, fontWeight: 800, letterSpacing: -0.8, marginTop: 22, lineHeight: 1.15 }}>{workout.label}</div>
+        <div style={{ fontSize: 12, color: C.accentSoft, letterSpacing: 2, textTransform: "uppercase", fontWeight: 700, marginTop: 24 }}>
+          {isSameCalendarDay(workout.date) ? "🔥 Today's Workout" : "Your Workout"}
+        </div>
+        <div style={{ fontSize: 30, fontWeight: 800, letterSpacing: -0.8, marginTop: 6, lineHeight: 1.15 }}>{workout.label}</div>
         <div style={{ fontSize: 15, color: C.textDim, marginTop: 4, fontWeight: 500 }}>{workout.dateLabel}</div>
 
         <div style={{ marginTop: 22 }}>
