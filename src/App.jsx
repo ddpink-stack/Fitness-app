@@ -877,13 +877,19 @@ export default function FitnessApp() {
                     </button>
                   )}
 
-                  <div style={{ display: "flex", gap: 8, paddingTop: 14, borderTop: `1px solid ${C.border}` }}>
-                    <IconButton icon={Info} onClick={() => openSheet("info", ex, exUid)} label="What this works" />
+                  <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 14, paddingTop: 14, borderTop: `1px solid ${C.border}` }}>
+                    <button
+                      onClick={() => openSheet("info", ex, exUid)}
+                      aria-label="What this works"
+                      style={{ background: "none", border: "none", color: C.text, padding: 0, cursor: "pointer", display: "flex" }}
+                    >
+                      <Info size={20} strokeWidth={2} />
+                    </button>
                     <IconButton icon={Video} onClick={() => openSheet("video", ex, exUid)} label="Video" />
                     {!exDone && doneCount === 0 && (
-                      <IconButton icon={RefreshCw} onClick={() => swapExercise(exIndex)} label="Swap" />
+                      <Chip icon={RefreshCw} onClick={() => swapExercise(exIndex)}>Swap</Chip>
                     )}
-                    <IconButton icon={MessageCircle} onClick={() => openSheet("tip", ex, exUid)} label="Coach tip" />
+                    <Chip icon={MessageCircle} onClick={() => openSheet("tip", ex, exUid)} tone="accent">Coach tip</Chip>
                   </div>
                 </div>
               );
