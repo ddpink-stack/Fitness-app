@@ -567,11 +567,22 @@ export default function FitnessApp() {
     () => (displayedWorkout ? displayedWorkout.exercises.reduce((acc, ex) => acc + ex.sets, 0) : 0),
     [displayedWorkout]
   );
-  const doneSets = useMemo(
-    () => Object.values(dayProgress.completedSets).filter(Boolean).length,
-    [dayProgress]
-  );
-  const progressPct = totalSets ? Math.round((doneSets / totalSets) * 100) : 0;
+  // Counts only sets that belong to the exercises currently shown for this
+  // day — a raw count over dayProgress.completedSets would also pick up
+  // stale entries left behind by an exercise swap or plan regeneration
+  // under the same day id, letting "done" exceed the real total.
+  const doneSets = useMemo(() => {
+    if (!displayedWorkout || !workout) return 0;
+    let count = 0;
+    displayedWorkout.exercises.forEach((ex, exIndex) => {
+      const exUid = `${workout.id}-${ex.id}-${exIndex}`;
+      for (let i = 1; i <= ex.sets; i++) {
+        if (dayProgress.completedSets[`${exUid}-${i}`]) count++;
+      }
+    });
+    return count;
+  }, [displayedWorkout, workout, dayProgress]);
+  const progressPct = totalSets ? Math.min(100, Math.round((doneSets / totalSets) * 100)) : 0;
   const preWorkoutMeal = plan ? plan.nutrition.find((m) => m.time === "Pre Workout") : null;
   const postWorkoutMeal = plan ? plan.nutrition.find((m) => m.time === "Post Workout") : null;
 
