@@ -577,6 +577,28 @@ export default function FitnessApp() {
                       <div style={{ fontWeight: 700, fontSize: 18, display: "flex", alignItems: "center", gap: 8, lineHeight: 1.3 }}>
                         {ex.name}
                         {exDone && <span style={{ fontSize: 15, color: C.successBright }}>✓</span>}
+                        <button
+                          onClick={() => toggleInfo(exUid)}
+                          aria-label="What's this exercise for"
+                          style={{
+                            background: showInfo[exUid] ? "rgba(124,108,255,0.25)" : "rgba(255,255,255,0.08)",
+                            border: "none",
+                            color: showInfo[exUid] ? C.accentSoft : C.textDim,
+                            borderRadius: "50%",
+                            width: 22,
+                            height: 22,
+                            fontSize: 13,
+                            fontWeight: 700,
+                            cursor: "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            flexShrink: 0,
+                            padding: 0
+                          }}
+                        >
+                          ⓘ
+                        </button>
                       </div>
                       <div style={{ fontSize: 14, color: C.textDim, marginTop: 4 }}>
                         {ex.sets} sets · {ex.reps} · {ex.rest}
@@ -730,21 +752,6 @@ export default function FitnessApp() {
                       }}
                     >
                       {showTip[exUid] ? "▲ Coach tip" : "▼ Coach tip"}
-                    </button>
-                    <button
-                      onClick={() => toggleInfo(exUid)}
-                      style={{
-                        background: "rgba(255,255,255,0.06)",
-                        border: "none",
-                        color: C.textDim,
-                        fontSize: 13,
-                        cursor: "pointer",
-                        padding: "7px 12px",
-                        borderRadius: RADIUS.chip,
-                        fontWeight: 600
-                      }}
-                    >
-                      {showInfo[exUid] ? "▲ ⓘ What's this for" : "ⓘ What's this for"}
                     </button>
                     {!exDone && (
                       <button
