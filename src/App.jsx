@@ -663,6 +663,15 @@ export default function FitnessApp() {
   };
 
   const updateProfile = (patch) => {
+    // Changing daysPerWeek swaps in a whole new split template — the same
+    // day id can end up with a different category at the same exercise
+    // slot, so any saved swap "rotation" for that slot would silently
+    // apply to the wrong category. Clear swaps in that case; equipment/
+    // level changes don't reshuffle slot categories, so those are safe.
+    if (patch.daysPerWeek != null && patch.daysPerWeek !== profile?.daysPerWeek) {
+      setSwaps({});
+      saveJSON(SWAPS_KEY, {});
+    }
     setProfile((prev) => {
       const next = { ...prev, ...patch };
       saveJSON(PROFILE_KEY, next);
