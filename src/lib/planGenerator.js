@@ -9,15 +9,15 @@ const cardioMinutesByGoal = { "fat-loss": 25, "general-fitness": 20, "muscle-gai
 // category (e.g. "push","push") means two different push exercises.
 const splitTemplates = {
   3: [
-    { label: "Full Body — Day 1", categories: ["push", "pull", "legs", "core"] },
-    { label: "Full Body — Day 2", categories: ["pull", "legs", "push", "core"] },
-    { label: "Full Body — Day 3", categories: ["legs", "push", "pull", "core"] }
+    { label: "Full Body", categories: ["push", "pull", "legs", "core"] },
+    { label: "Full Body", categories: ["pull", "legs", "push", "core"] },
+    { label: "Full Body", categories: ["legs", "push", "pull", "core"] }
   ],
   4: [
-    { label: "Upper Body — Day 1", categories: ["push", "pull", "push", "core"] },
-    { label: "Lower Body — Day 1", categories: ["legs", "legs", "core"] },
-    { label: "Upper Body — Day 2", categories: ["pull", "push", "pull", "core"] },
-    { label: "Lower Body — Day 2", categories: ["legs", "legs", "core"] }
+    { label: "Upper Body", categories: ["push", "pull", "push", "core"] },
+    { label: "Lower Body", categories: ["legs", "legs", "core"] },
+    { label: "Upper Body", categories: ["pull", "push", "pull", "core"] },
+    { label: "Lower Body", categories: ["legs", "legs", "core"] }
   ],
   5: [
     { label: "Push Day", categories: ["push", "push", "core"] },
@@ -154,6 +154,10 @@ export function generateWeekPlan(profile, referenceDate = new Date()) {
   const cardioMinutes = cardioMinutesByGoal[goal] ?? 20;
   const monday = startOfWeekMonday(referenceDate);
   const trainIdx = trainingDayIndexes[daysPerWeek] ?? trainingDayIndexes[3];
+  const weekdayAbbrevs = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  // A split's day names only need a weekday tag when the same name repeats
+  // in the week (e.g. two "Upper Body" days) — otherwise it's just noise.
+  const labelCounts = template.reduce((acc, t) => acc.set(t.label, (acc.get(t.label) ?? 0) + 1), new Map());
 
   const trainingDays = template.map((dayTemplate, dayIndex) => {
     const used = new Set();
@@ -165,10 +169,13 @@ export function generateWeekPlan(profile, referenceDate = new Date()) {
 
     const date = new Date(monday);
     date.setDate(date.getDate() + trainIdx[dayIndex]);
+    const label = labelCounts.get(dayTemplate.label) > 1
+      ? `${dayTemplate.label} (${weekdayAbbrevs[trainIdx[dayIndex]]})`
+      : dayTemplate.label;
 
     return {
       id: `day-${dayIndex}`,
-      label: dayTemplate.label,
+      label,
       date: date.toISOString(),
       dateLabel: formatDayLabel(date),
       exercises,
