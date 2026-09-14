@@ -9,15 +9,15 @@ const cardioMinutesByGoal = { "fat-loss": 25, "general-fitness": 20, "muscle-gai
 // category (e.g. "push","push") means two different push exercises.
 const splitTemplates = {
   3: [
-    { label: "Full Body A", categories: ["push", "pull", "legs", "core"] },
-    { label: "Full Body B", categories: ["pull", "legs", "push", "core"] },
-    { label: "Full Body C", categories: ["legs", "push", "pull", "core"] }
+    { label: "Full Body — Day 1", categories: ["push", "pull", "legs", "core"] },
+    { label: "Full Body — Day 2", categories: ["pull", "legs", "push", "core"] },
+    { label: "Full Body — Day 3", categories: ["legs", "push", "pull", "core"] }
   ],
   4: [
-    { label: "Upper A", categories: ["push", "pull", "push", "core"] },
-    { label: "Lower A", categories: ["legs", "legs", "core"] },
-    { label: "Upper B", categories: ["pull", "push", "pull", "core"] },
-    { label: "Lower B", categories: ["legs", "legs", "core"] }
+    { label: "Upper Body — Push Focus", categories: ["push", "pull", "push", "core"] },
+    { label: "Lower Body — Day 1", categories: ["legs", "legs", "core"] },
+    { label: "Upper Body — Pull Focus", categories: ["pull", "push", "pull", "core"] },
+    { label: "Lower Body — Day 2", categories: ["legs", "legs", "core"] }
   ],
   5: [
     { label: "Push Day", categories: ["push", "push", "core"] },
