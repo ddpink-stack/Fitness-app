@@ -28,6 +28,7 @@ export default function FitnessApp() {
   const [activeTab, setActiveTab] = useState("workout");
   const [selectedDayId, setSelectedDayId] = useState(null);
   const [showTip, setShowTip] = useState({});
+  const [showVideo, setShowVideo] = useState({});
   const [savedNote, setSavedNote] = useState(false);
 
   const plan = useMemo(() => (profile ? generateWeekPlan(profile) : null), [profile]);
@@ -82,6 +83,10 @@ export default function FitnessApp() {
 
   const toggleTip = (id) => {
     setShowTip((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const toggleVideo = (id) => {
+    setShowVideo((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
   const totalSets = workout.exercises.reduce((acc, ex) => acc + ex.sets, 0);
@@ -242,10 +247,8 @@ export default function FitnessApp() {
                         {ex.sets} sets · {ex.reps} · {ex.rest}
                       </div>
                     </div>
-                    <a
-                      href={ex.youtube}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <button
+                      onClick={() => toggleVideo(exUid)}
                       style={{
                         background: "#1a0000",
                         border: "1px solid #3a0000",
@@ -254,15 +257,15 @@ export default function FitnessApp() {
                         padding: "5px 10px",
                         fontSize: 11,
                         fontWeight: 700,
-                        textDecoration: "none",
+                        cursor: "pointer",
                         whiteSpace: "nowrap",
                         display: "flex",
                         alignItems: "center",
                         gap: 4
                       }}
                     >
-                      ▶ Video
-                    </a>
+                      {showVideo[exUid] ? "▲ Hide" : "▶ Video"}
+                    </button>
                   </div>
 
                   <div style={{
@@ -276,6 +279,35 @@ export default function FitnessApp() {
                   }}>
                     💡 {ex.cue}
                   </div>
+
+                  {showVideo[exUid] && (
+                    <div style={{ marginBottom: 12 }}>
+                      <div style={{
+                        position: "relative",
+                        width: "100%",
+                        paddingBottom: "56.25%",
+                        borderRadius: 8,
+                        overflow: "hidden",
+                        background: "#000"
+                      }}>
+                        <iframe
+                          src={`https://www.youtube-nocookie.com/embed/${ex.videoId}`}
+                          title={`${ex.name} form video`}
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                          style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: "none" }}
+                        />
+                      </div>
+                      <a
+                        href={`https://www.youtube.com/watch?v=${ex.videoId}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ display: "inline-block", marginTop: 6, fontSize: 11, color: "#6c63ff", textDecoration: "none" }}
+                      >
+                        Open in YouTube ↗
+                      </a>
+                    </div>
+                  )}
 
                   <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
                     {Array.from({ length: ex.sets }, (_, i) => {
