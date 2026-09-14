@@ -134,6 +134,39 @@ export function getSwapPool(category, available) {
   return exerciseLibrary[category].filter((ex) => ex.equipment.some((e) => available.includes(e)));
 }
 
+// Rough starting-point calorie/macro targets from body weight + goal +
+// training load — not a medical calculation (that needs height too),
+// but a widely-used per-kg coaching heuristic that actually shifts with
+// who's eating and what they're training for, unlike a flat number.
+const kcalPerKgByGoal = { "fat-loss": 25, "general-fitness": 29, "muscle-gain": 36 };
+const proteinPerKgByGoal = { "fat-loss": 2.0, "general-fitness": 1.6, "muscle-gain": 1.8 };
+const activityFactorByLevel = { beginner: 0.95, intermediate: 1.0, advanced: 1.08 };
+const goalTips = {
+  "fat-loss": "Keep protein and veg high, go moderate on rice/chapati — the numbers above are your ceiling, not a target to hit exactly.",
+  "muscle-gain": "Don't undereat — if you're not gaining over a couple of weeks, add an extra portion (rice, chapati, or a protein shake).",
+  "general-fitness": "Balanced portions across the day — eat until comfortably full, no need to restrict."
+};
+
+export function computeNutritionTargets(profile) {
+  const { bodyWeight, goal, level, daysPerWeek } = profile;
+  const weight = bodyWeight || 70;
+  const kcalPerKg = kcalPerKgByGoal[goal] ?? kcalPerKgByGoal["general-fitness"];
+  const activityFactor = (activityFactorByLevel[level] ?? 1) * (1 + Math.max(0, (daysPerWeek || 3) - 3) * 0.02);
+  const calories = Math.round((weight * kcalPerKg * activityFactor) / 10) * 10;
+  const proteinG = Math.round(weight * (proteinPerKgByGoal[goal] ?? proteinPerKgByGoal["general-fitness"]));
+  const proteinCal = proteinG * 4;
+  const fatCal = calories * 0.25;
+  const fatG = Math.round(fatCal / 9);
+  const carbsG = Math.max(0, Math.round((calories - proteinCal - fatCal) / 4));
+  return {
+    calories,
+    proteinG,
+    carbsG,
+    fatG,
+    tip: goalTips[goal] ?? goalTips["general-fitness"]
+  };
+}
+
 function pickExercise(category, dayIndex, slotIndex, available, used) {
   const pool = exerciseLibrary[category].filter(
     (ex) => ex.equipment.some((e) => available.includes(e)) && !used.has(ex.id)
@@ -145,7 +178,7 @@ function pickExercise(category, dayIndex, slotIndex, available, used) {
   return chosen;
 }
 
-export function generateWeekPlan(profile, referenceDate = new Date()) {
+export function generateWeekPlan(profile, referenceDate = new Date(), customTrainIdx = null) {
   const { daysPerWeek, equipment, level, goal, diet } = profile;
   const template = splitTemplates[daysPerWeek] ?? splitTemplates[3];
   const available = availableEquipment(equipment);
@@ -153,7 +186,9 @@ export function generateWeekPlan(profile, referenceDate = new Date()) {
   const rest = restByLevel[level] ?? "60 sec rest";
   const cardioMinutes = cardioMinutesByGoal[goal] ?? 20;
   const monday = startOfWeekMonday(referenceDate);
-  const trainIdx = trainingDayIndexes[daysPerWeek] ?? trainingDayIndexes[3];
+  const trainIdx = customTrainIdx && customTrainIdx.length === daysPerWeek
+    ? [...customTrainIdx].sort((a, b) => a - b)
+    : (trainingDayIndexes[daysPerWeek] ?? trainingDayIndexes[3]);
   const weekdayAbbrevs = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
   // A split's day names only need a weekday tag when the same name repeats
   // in the week (e.g. two "Upper Body" days) — otherwise it's just noise.
@@ -219,6 +254,7 @@ export function generateWeekPlan(profile, referenceDate = new Date()) {
   return {
     trainingDays,
     weekSchedule,
-    nutrition: mealPlansByDiet[diet] ?? mealPlansByDiet.vegetarian
+    nutrition: mealPlansByDiet[diet] ?? mealPlansByDiet.vegetarian,
+    nutritionTargets: computeNutritionTargets(profile)
   };
 }

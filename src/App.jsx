@@ -2,11 +2,19 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Questionnaire from "./components/Questionnaire.jsx";
 import { generateWeekPlan, computeWeightsBySet, getSwapPool } from "./lib/planGenerator.js";
 import { availableEquipment } from "./data/exercises.js";
+import { foodDatabase } from "./data/foods.js";
 
 const PROFILE_KEY = "fitness-app:profile";
 const PROGRESS_KEY = "fitness-app:progress";
 const HISTORY_KEY = "fitness-app:history";
 const SWAPS_KEY = "fitness-app:swaps";
+const CUSTOM_DAYS_KEY = "fitness-app:customDays";
+const FOOD_LOG_KEY = "fitness-app:foodLog";
+const WEEKDAY_NAMES = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+function todayKey() {
+  return new Date().toISOString().slice(0, 10);
+}
 
 function parseRestSeconds(restLabel) {
   const match = /(\d+)/.exec(restLabel || "");
@@ -35,15 +43,26 @@ export default function FitnessApp() {
   const [progress, setProgress] = useState(() => loadJSON(PROGRESS_KEY, {}));
   const [history, setHistory] = useState(() => loadJSON(HISTORY_KEY, []));
   const [swaps, setSwaps] = useState(() => loadJSON(SWAPS_KEY, {}));
+  const [customDays, setCustomDays] = useState(() => loadJSON(CUSTOM_DAYS_KEY, null));
+  const [foodLog, setFoodLog] = useState(() => loadJSON(FOOD_LOG_KEY, {}));
   const [activeTab, setActiveTab] = useState("workout");
   const [selectedDayId, setSelectedDayId] = useState(null);
   const [showTip, setShowTip] = useState({});
   const [showVideo, setShowVideo] = useState({});
   const [savedNote, setSavedNote] = useState(false);
   const [restTimer, setRestTimer] = useState(null); // { exUid, exName, total, secondsLeft }
+  const [editingSchedule, setEditingSchedule] = useState(false);
+  const [draftDays, setDraftDays] = useState([]);
+  const [foodQuery, setFoodQuery] = useState("");
+  const [customFoodMode, setCustomFoodMode] = useState(false);
+  const [customFoodForm, setCustomFoodForm] = useState({ name: "", calories: "" });
   const importInputRef = useRef(null);
 
-  const plan = useMemo(() => (profile ? generateWeekPlan(profile) : null), [profile]);
+  const plan = useMemo(() => {
+    if (!profile) return null;
+    const valid = customDays && customDays.length === profile.daysPerWeek ? customDays : null;
+    return generateWeekPlan(profile, new Date(), valid);
+  }, [profile, customDays]);
 
   useEffect(() => {
     if (plan && !selectedDayId) {
@@ -62,6 +81,14 @@ export default function FitnessApp() {
   useEffect(() => {
     saveJSON(SWAPS_KEY, swaps);
   }, [swaps]);
+
+  useEffect(() => {
+    saveJSON(CUSTOM_DAYS_KEY, customDays);
+  }, [customDays]);
+
+  useEffect(() => {
+    saveJSON(FOOD_LOG_KEY, foodLog);
+  }, [foodLog]);
 
   useEffect(() => {
     if (!restTimer) return;
@@ -158,15 +185,18 @@ export default function FitnessApp() {
     localStorage.removeItem(PROFILE_KEY);
     localStorage.removeItem(PROGRESS_KEY);
     localStorage.removeItem(SWAPS_KEY);
+    localStorage.removeItem(CUSTOM_DAYS_KEY);
     setProfile(null);
     setProgress({});
     setSwaps({});
+    setCustomDays(null);
     setSelectedDayId(null);
     setRestTimer(null);
+    setEditingSchedule(false);
   };
 
   const exportBackup = () => {
-    const payload = { exportedAt: new Date().toISOString(), profile, progress, history, swaps };
+    const payload = { exportedAt: new Date().toISOString(), profile, progress, history, swaps, customDays, foodLog };
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -199,6 +229,14 @@ export default function FitnessApp() {
           saveJSON(SWAPS_KEY, data.swaps);
           setSwaps(data.swaps);
         }
+        if (data.customDays) {
+          saveJSON(CUSTOM_DAYS_KEY, data.customDays);
+          setCustomDays(data.customDays);
+        }
+        if (data.foodLog) {
+          saveJSON(FOOD_LOG_KEY, data.foodLog);
+          setFoodLog(data.foodLog);
+        }
       } catch {
         window.alert("That file doesn't look like a valid backup.");
       }
@@ -213,6 +251,63 @@ export default function FitnessApp() {
       return { ...prev, [dayKey]: { ...current, [exIndex]: (current[exIndex] || 0) + 1 } };
     });
   };
+
+  const startEditingSchedule = () => {
+    const current = plan.weekSchedule.map((d, i) => (d.active ? i : null)).filter((v) => v !== null);
+    setDraftDays(current);
+    setEditingSchedule(true);
+  };
+
+  const toggleDraftDay = (i) => {
+    setDraftDays((prev) => (prev.includes(i) ? prev.filter((d) => d !== i) : [...prev, i].sort((a, b) => a - b)));
+  };
+
+  const saveSchedule = () => {
+    if (draftDays.length !== profile.daysPerWeek) return;
+    setCustomDays(draftDays);
+    setEditingSchedule(false);
+  };
+
+  const todayFoodEntries = foodLog[todayKey()] ?? [];
+
+  const addFoodEntry = (entry) => {
+    setFoodLog((prev) => {
+      const key = todayKey();
+      const dayEntries = prev[key] ?? [];
+      const id = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+      return { ...prev, [key]: [...dayEntries, { ...entry, id }] };
+    });
+    setFoodQuery("");
+    setCustomFoodMode(false);
+    setCustomFoodForm({ name: "", calories: "" });
+  };
+
+  const removeFoodEntry = (id) => {
+    setFoodLog((prev) => {
+      const key = todayKey();
+      return { ...prev, [key]: (prev[key] ?? []).filter((e) => e.id !== id) };
+    });
+  };
+
+  const submitCustomFood = () => {
+    const calories = parseFloat(customFoodForm.calories);
+    if (!customFoodForm.name.trim() || Number.isNaN(calories)) return;
+    addFoodEntry({ name: customFoodForm.name.trim(), calories, protein: 0, carbs: 0, fat: 0 });
+  };
+
+  const foodMatches = foodQuery.trim().length > 0
+    ? foodDatabase.filter((f) => f.name.toLowerCase().includes(foodQuery.trim().toLowerCase())).slice(0, 6)
+    : [];
+
+  const foodTotals = todayFoodEntries.reduce(
+    (acc, e) => ({
+      calories: acc.calories + (e.calories || 0),
+      protein: acc.protein + (e.protein || 0)
+    }),
+    { calories: 0, protein: 0 }
+  );
+
+  const goalLabels = { "fat-loss": "Fat Loss", "muscle-gain": "Muscle Gain", "general-fitness": "General Fitness" };
 
   const setDayProgress = (updater) => {
     setProgress((prev) => {
@@ -735,6 +830,174 @@ export default function FitnessApp() {
 
         {activeTab === "nutrition" && (
           <div>
+            <div style={{
+              background: "#111118",
+              border: "1px solid #1e1e3a",
+              borderRadius: 14,
+              padding: 16,
+              marginBottom: 12
+            }}>
+              <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 4 }}>
+                🎯 Your Targets — {goalLabels[profile.goal] ?? "General Fitness"}
+              </div>
+              <div style={{ fontSize: 11, color: "#8888aa", marginBottom: 14, lineHeight: 1.5 }}>
+                {plan.nutritionTargets.tip}
+              </div>
+              <div style={{ display: "flex", gap: 8 }}>
+                {[
+                  { label: "Calories", value: plan.nutritionTargets.calories, unit: "kcal" },
+                  { label: "Protein", value: plan.nutritionTargets.proteinG, unit: "g" },
+                  { label: "Carbs", value: plan.nutritionTargets.carbsG, unit: "g" },
+                  { label: "Fat", value: plan.nutritionTargets.fatG, unit: "g" }
+                ].map((m, i) => (
+                  <div key={i} style={{ flex: 1, textAlign: "center", background: "#0d0d1a", borderRadius: 10, padding: "10px 4px" }}>
+                    <div style={{ fontSize: 16, fontWeight: 700, color: "#a78bfa" }}>{m.value}</div>
+                    <div style={{ fontSize: 9, color: "#8888aa", marginTop: 2 }}>{m.label} ({m.unit})</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div style={{
+              background: "#111118",
+              border: "1px solid #1e1e3a",
+              borderRadius: 14,
+              padding: 16,
+              marginBottom: 12
+            }}>
+              <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 12 }}>🍽️ Today's Food Log</div>
+
+              <div style={{ marginBottom: 14 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#8888aa", marginBottom: 6 }}>
+                  <span>{Math.round(foodTotals.calories)} / {plan.nutritionTargets.calories} kcal</span>
+                  <span style={{ color: foodTotals.calories > plan.nutritionTargets.calories ? "#f87171" : "#4ade80" }}>
+                    {foodTotals.calories === 0 ? "Not logged yet" : foodTotals.calories > plan.nutritionTargets.calories ? "Over target" : "On track"}
+                  </span>
+                </div>
+                <div style={{ background: "#1e1e3a", borderRadius: 99, height: 6 }}>
+                  <div style={{
+                    background: foodTotals.calories > plan.nutritionTargets.calories
+                      ? "linear-gradient(90deg, #f87171, #ef4444)"
+                      : "linear-gradient(90deg, #6c63ff, #a78bfa)",
+                    width: `${Math.min(100, (foodTotals.calories / plan.nutritionTargets.calories) * 100)}%`,
+                    height: "100%",
+                    borderRadius: 99,
+                    transition: "width 0.4s ease"
+                  }} />
+                </div>
+                <div style={{ fontSize: 11, color: "#8888aa", marginTop: 6 }}>
+                  Protein: {Math.round(foodTotals.protein)}g / {plan.nutritionTargets.proteinG}g
+                </div>
+              </div>
+
+              <input
+                value={foodQuery}
+                onChange={(e) => setFoodQuery(e.target.value)}
+                placeholder="Search food e.g. chapati, rice, egg..."
+                style={{
+                  width: "100%",
+                  background: "#0d0d1a",
+                  border: "1px solid #2a2a44",
+                  borderRadius: 8,
+                  color: "#f0f0f5",
+                  padding: 10,
+                  fontSize: 13,
+                  boxSizing: "border-box",
+                  marginBottom: foodQuery ? 8 : 0
+                }}
+              />
+
+              {foodQuery.trim().length > 0 && !customFoodMode && (
+                <div style={{ marginBottom: 8 }}>
+                  {foodMatches.map((f, i) => (
+                    <button
+                      key={i}
+                      onClick={() => addFoodEntry(f)}
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        width: "100%",
+                        background: "#0d0d1a",
+                        border: "1px solid #2a2a44",
+                        borderRadius: 8,
+                        padding: "8px 10px",
+                        marginBottom: 6,
+                        cursor: "pointer",
+                        color: "#f0f0f5",
+                        fontSize: 12,
+                        textAlign: "left",
+                        boxSizing: "border-box"
+                      }}
+                    >
+                      <span>{f.name} <span style={{ color: "#666680" }}>· {f.unit}</span></span>
+                      <span style={{ color: "#a78bfa", fontWeight: 600, whiteSpace: "nowrap" }}>{f.calories} kcal</span>
+                    </button>
+                  ))}
+                  {foodMatches.length === 0 && (
+                    <div style={{ fontSize: 12, color: "#8888aa", marginBottom: 8 }}>No match found.</div>
+                  )}
+                  <button
+                    onClick={() => { setCustomFoodMode(true); setCustomFoodForm({ name: foodQuery, calories: "" }); }}
+                    style={{ background: "none", border: "none", color: "#6c63ff", fontSize: 12, fontWeight: 600, cursor: "pointer", padding: 0 }}
+                  >
+                    + Add "{foodQuery}" as custom entry
+                  </button>
+                </div>
+              )}
+
+              {customFoodMode && (
+                <div style={{ background: "#0d0d1a", border: "1px solid #2a2a44", borderRadius: 8, padding: 10, marginBottom: 10 }}>
+                  <input
+                    value={customFoodForm.name}
+                    onChange={(e) => setCustomFoodForm((f) => ({ ...f, name: e.target.value }))}
+                    placeholder="Food name"
+                    style={{ width: "100%", background: "#111118", border: "1px solid #2a2a44", borderRadius: 6, color: "#f0f0f5", padding: 8, fontSize: 12, marginBottom: 6, boxSizing: "border-box" }}
+                  />
+                  <input
+                    type="number"
+                    value={customFoodForm.calories}
+                    onChange={(e) => setCustomFoodForm((f) => ({ ...f, calories: e.target.value }))}
+                    placeholder="Calories"
+                    style={{ width: "100%", background: "#111118", border: "1px solid #2a2a44", borderRadius: 6, color: "#f0f0f5", padding: 8, fontSize: 12, marginBottom: 8, boxSizing: "border-box" }}
+                  />
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button
+                      onClick={submitCustomFood}
+                      style={{ flex: 1, background: "linear-gradient(135deg, #6c63ff, #a78bfa)", border: "none", borderRadius: 6, color: "#fff", fontWeight: 700, fontSize: 12, padding: "8px 0", cursor: "pointer" }}
+                    >
+                      Add
+                    </button>
+                    <button
+                      onClick={() => setCustomFoodMode(false)}
+                      style={{ flex: 1, background: "none", border: "1px solid #2a2a44", borderRadius: 6, color: "#8888aa", fontWeight: 700, fontSize: 12, padding: "8px 0", cursor: "pointer" }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {todayFoodEntries.length > 0 && (
+                <div>
+                  {todayFoodEntries.map((e) => (
+                    <div key={e.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 0", borderTop: "1px solid #1a1a28", fontSize: 12 }}>
+                      <span style={{ color: "#ccccdd" }}>{e.name}</span>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <span style={{ color: "#a78bfa" }}>{Math.round(e.calories)} kcal</span>
+                        <button
+                          onClick={() => removeFoodEntry(e.id)}
+                          style={{ background: "none", border: "none", color: "#666680", cursor: "pointer", fontSize: 12, padding: 0 }}
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
             {plan.nutrition.map((meal, i) => (
               <div key={i} style={{
                 background: "#111118",
@@ -817,27 +1080,95 @@ export default function FitnessApp() {
               padding: 16,
               marginBottom: 12
             }}>
-              <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 14 }}>📅 Your Week</div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 6 }}>
-                {plan.weekSchedule.map((d, i) => (
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+                <div style={{ fontWeight: 700, fontSize: 14 }}>📅 Your Week</div>
+                {!editingSchedule && (
                   <button
-                    key={i}
-                    onClick={() => d.trainingDayId && setSelectedDayId(d.trainingDayId)}
-                    style={{
-                      textAlign: "center",
-                      padding: "10px 4px",
-                      borderRadius: 10,
-                      background: d.active ? "linear-gradient(135deg, #1a1535, #2a1f55)" : "#0d0d1a",
-                      border: d.active ? "1px solid #6c63ff" : "1px solid #1a1a28",
-                      cursor: d.trainingDayId ? "pointer" : "default"
-                    }}
+                    onClick={startEditingSchedule}
+                    style={{ background: "none", border: "none", color: "#6c63ff", fontSize: 12, fontWeight: 600, cursor: "pointer", padding: 0 }}
                   >
-                    <div style={{ fontSize: 16, marginBottom: 4 }}>{d.icon}</div>
-                    <div style={{ fontSize: 10, fontWeight: 700, color: d.active ? "#a78bfa" : "#666680" }}>{d.day} {d.dateNum}</div>
-                    <div style={{ fontSize: 9, color: d.active ? "#8877dd" : "#444460", marginTop: 2 }}>{d.label}</div>
+                    ✏️ Edit Days
                   </button>
-                ))}
+                )}
               </div>
+
+              {editingSchedule ? (
+                <div>
+                  <div style={{ fontSize: 12, color: "#8888aa", marginBottom: 10 }}>
+                    Select {profile.daysPerWeek} training days ({draftDays.length}/{profile.daysPerWeek} selected)
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 6, marginBottom: 14 }}>
+                    {WEEKDAY_NAMES.map((wd, i) => {
+                      const selected = draftDays.includes(i);
+                      return (
+                        <button
+                          key={i}
+                          onClick={() => toggleDraftDay(i)}
+                          style={{
+                            textAlign: "center",
+                            padding: "12px 4px",
+                            borderRadius: 10,
+                            background: selected ? "linear-gradient(135deg, #6c63ff, #a78bfa)" : "#0d0d1a",
+                            border: selected ? "1px solid #6c63ff" : "1px solid #1a1a28",
+                            color: selected ? "#fff" : "#666680",
+                            fontSize: 11,
+                            fontWeight: 700,
+                            cursor: "pointer"
+                          }}
+                        >
+                          {wd}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button
+                      onClick={saveSchedule}
+                      disabled={draftDays.length !== profile.daysPerWeek}
+                      style={{
+                        flex: 1,
+                        background: draftDays.length === profile.daysPerWeek ? "linear-gradient(135deg, #6c63ff, #a78bfa)" : "#1e1e3a",
+                        border: "none",
+                        borderRadius: 8,
+                        color: draftDays.length === profile.daysPerWeek ? "#fff" : "#666680",
+                        fontWeight: 700,
+                        fontSize: 13,
+                        padding: "10px 0",
+                        cursor: draftDays.length === profile.daysPerWeek ? "pointer" : "default"
+                      }}
+                    >
+                      Save
+                    </button>
+                    <button
+                      onClick={() => setEditingSchedule(false)}
+                      style={{ flex: 1, background: "none", border: "1px solid #2a2a44", borderRadius: 8, color: "#8888aa", fontWeight: 700, fontSize: 13, padding: "10px 0", cursor: "pointer" }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 6 }}>
+                  {plan.weekSchedule.map((d, i) => (
+                    <button
+                      key={i}
+                      onClick={() => d.trainingDayId && setSelectedDayId(d.trainingDayId)}
+                      style={{
+                        textAlign: "center",
+                        padding: "10px 4px",
+                        borderRadius: 10,
+                        background: d.active ? "linear-gradient(135deg, #1a1535, #2a1f55)" : "#0d0d1a",
+                        border: d.active ? "1px solid #6c63ff" : "1px solid #1a1a28",
+                        cursor: d.trainingDayId ? "pointer" : "default"
+                      }}
+                    >
+                      <div style={{ fontSize: 16, marginBottom: 4 }}>{d.icon}</div>
+                      <div style={{ fontSize: 10, fontWeight: 700, color: d.active ? "#a78bfa" : "#666680" }}>{d.day} {d.dateNum}</div>
+                      <div style={{ fontSize: 9, color: d.active ? "#8877dd" : "#444460", marginTop: 2 }}>{d.label}</div>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         )}
