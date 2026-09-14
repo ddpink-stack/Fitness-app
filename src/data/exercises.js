@@ -5,6 +5,15 @@ export function availableEquipment(userEquipment) {
   return ["bodyweight"];
 }
 
+// What training this movement pattern is generally doing for the body —
+// shown alongside an exercise's specific muscles in the "info" panel.
+export const categoryPurpose = {
+  push: "Pushing movements build your chest, shoulders, and triceps — the muscles that press weight away from your body. Strong pushing strength shows up as upper-body size and everyday tasks like pushing a door or getting up from the floor.",
+  pull: "Pulling movements build your back and biceps — the muscles that draw weight toward your body. This is what counteracts hours of sitting/hunching and builds the width and thickness that make a physique look strong from behind.",
+  legs: "Leg movements train your quads, hamstrings, and glutes — the biggest muscles in your body. They burn the most calories per session, build lower-body strength, and support almost every other exercise and daily movement.",
+  core: "Core work trains your abs and the stabilizing muscles around your spine. It's not really about visible abs — it's what keeps your torso stable and your lower back safe during every other lift."
+};
+
 export const exerciseLibrary = {
   push: [
     {
@@ -15,7 +24,8 @@ export const exerciseLibrary = {
       cue: "Hands on bench, body straight as a plank, lower chest toward bench",
       tip: "Don't let your hips sag. If too easy, go lower surface.",
       videoId: "0JUrOH--Kdk",
-      emoji: "🤸"
+      emoji: "🤸",
+      muscles: ["Chest", "Shoulders", "Triceps"]
     },
     {
       id: "dumbbell-bench-press",
@@ -26,6 +36,7 @@ export const exerciseLibrary = {
       tip: "Don't let your elbows flare past 90°.",
       videoId: "kgr3lCKx6_M",
       emoji: "🏋️",
+      muscles: ["Chest", "Shoulders", "Triceps"],
       suggestedWeight: {
         unit: "kg each hand",
         step: 1,
@@ -43,6 +54,7 @@ export const exerciseLibrary = {
       tip: "Exhale on the push, don't arch your lower back.",
       videoId: "1jYq9QQEWqE",
       emoji: "💪",
+      muscles: ["Shoulders", "Triceps"],
       suggestedWeight: {
         unit: "kg each hand",
         step: 1,
@@ -60,6 +72,7 @@ export const exerciseLibrary = {
       tip: "Keep feet planted, don't bounce the bar off your chest.",
       videoId: "Pp8rHcFVIYg",
       emoji: "🏋️",
+      muscles: ["Chest", "Shoulders", "Triceps"],
       suggestedWeight: {
         unit: "kg total",
         step: 2.5,
@@ -80,6 +93,7 @@ export const exerciseLibrary = {
       tip: "Don't twist your body. Keep it slow and controlled.",
       videoId: "fURsHPHgssI",
       emoji: "💪",
+      muscles: ["Back", "Biceps"],
       suggestedWeight: {
         unit: "kg",
         step: 1,
@@ -96,7 +110,8 @@ export const exerciseLibrary = {
       cue: "Grip a sturdy table edge or bar, body straight, pull chest up to it",
       tip: "Keep your body rigid — no sagging hips.",
       videoId: "Fl0UMfdEzsE",
-      emoji: "🧗"
+      emoji: "🧗",
+      muscles: ["Back", "Biceps"]
     },
     {
       id: "lat-pulldown",
@@ -107,6 +122,7 @@ export const exerciseLibrary = {
       tip: "Don't let the cable yank you back up. Control the return.",
       videoId: "Z_3xHwuO8Tk",
       emoji: "🎯",
+      muscles: ["Back (lats)", "Biceps"],
       suggestedWeight: {
         unit: "kg",
         step: 5,
@@ -124,6 +140,7 @@ export const exerciseLibrary = {
       tip: "Don't round your lower back — hinge, don't hunch.",
       videoId: "Lf4LUL3FeUM",
       emoji: "🏋️",
+      muscles: ["Back", "Biceps", "Rear shoulders"],
       suggestedWeight: {
         unit: "kg total",
         step: 2.5,
@@ -144,6 +161,7 @@ export const exerciseLibrary = {
       tip: "Keep your weight on your heels and chest tall.",
       videoId: "k_EhLGvM8TQ",
       emoji: "🏋️",
+      muscles: ["Quads", "Glutes"],
       suggestedWeight: {
         unit: "kg",
         step: 1,
@@ -160,7 +178,8 @@ export const exerciseLibrary = {
       cue: "Feet shoulder-width, sit back and down, chest up",
       tip: "Go as low as feels controlled — depth over speed.",
       videoId: "P-yaD24bUE8",
-      emoji: "🦵"
+      emoji: "🦵",
+      muscles: ["Quads", "Glutes"]
     },
     {
       id: "lunges",
@@ -170,7 +189,8 @@ export const exerciseLibrary = {
       cue: "Step forward, drop back knee toward the floor, push back up",
       tip: "Keep your torso upright, don't lean forward.",
       videoId: "BenhAbJiTsw",
-      emoji: "🚶"
+      emoji: "🚶",
+      muscles: ["Quads", "Glutes", "Hamstrings"]
     },
     {
       id: "leg-press",
@@ -181,6 +201,7 @@ export const exerciseLibrary = {
       tip: "Don't lock your knees out hard at the top.",
       videoId: "8nm863C0c60",
       emoji: "🦿",
+      muscles: ["Quads", "Glutes", "Hamstrings"],
       suggestedWeight: {
         unit: "kg (plus sled)",
         step: 5,
@@ -199,7 +220,8 @@ export const exerciseLibrary = {
       cue: "Elbows under shoulders, body straight, breathe normally",
       tip: "Don't hold your breath. Quality over duration.",
       videoId: "62SXSsM8A2o",
-      emoji: "🧘"
+      emoji: "🧘",
+      muscles: ["Abs", "Lower back stability"]
     },
     {
       id: "russian-twist",
@@ -209,7 +231,8 @@ export const exerciseLibrary = {
       cue: "Lean back slightly, feet off floor if you can, rotate side to side",
       tip: "Move slowly — twisting fast just uses momentum, not your core.",
       videoId: "fPxO-FA8acM",
-      emoji: "🌀"
+      emoji: "🌀",
+      muscles: ["Obliques", "Abs"]
     }
   ]
 };

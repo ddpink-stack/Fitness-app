@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Questionnaire from "./components/Questionnaire.jsx";
 import { generateWeekPlan, computeWeightsBySet, getSwapPool } from "./lib/planGenerator.js";
-import { availableEquipment } from "./data/exercises.js";
+import { availableEquipment, categoryPurpose } from "./data/exercises.js";
 import { foodDatabase, genericFoodCategories } from "./data/foods.js";
 
 const PROFILE_KEY = "fitness-app:profile";
@@ -73,6 +73,7 @@ export default function FitnessApp() {
   const [selectedDayId, setSelectedDayId] = useState(null);
   const [showTip, setShowTip] = useState({});
   const [showVideo, setShowVideo] = useState({});
+  const [showInfo, setShowInfo] = useState({});
   const [savedNote, setSavedNote] = useState(false);
   const [restTimer, setRestTimer] = useState(null); // { exUid, exName, total, secondsLeft }
   const [editingSchedule, setEditingSchedule] = useState(false);
@@ -421,6 +422,10 @@ export default function FitnessApp() {
     setShowVideo((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
+  const toggleInfo = (id) => {
+    setShowInfo((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
+
   const tabs = [
     { id: "workout", label: "Workout", icon: "🏋️" },
     { id: "nutrition", label: "Nutrition", icon: "🍽️" },
@@ -566,6 +571,9 @@ export default function FitnessApp() {
                   <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 14 }}>
                     <span style={{ fontSize: 28 }}>{ex.emoji}</span>
                     <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 12, color: C.accentSoft, letterSpacing: 1.5, textTransform: "uppercase", fontWeight: 700, marginBottom: 4 }}>
+                        Exercise {exIndex + 1} of {displayedWorkout.exercises.length}
+                      </div>
                       <div style={{ fontWeight: 700, fontSize: 18, display: "flex", alignItems: "center", gap: 8, lineHeight: 1.3 }}>
                         {ex.name}
                         {exDone && <span style={{ fontSize: 15, color: C.successBright }}>✓</span>}
@@ -707,7 +715,7 @@ export default function FitnessApp() {
                     })}
                   </div>
 
-                  <div style={{ display: "flex", gap: 8 }}>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                     <button
                       onClick={() => toggleTip(exUid)}
                       style={{
@@ -722,6 +730,21 @@ export default function FitnessApp() {
                       }}
                     >
                       {showTip[exUid] ? "▲ Coach tip" : "▼ Coach tip"}
+                    </button>
+                    <button
+                      onClick={() => toggleInfo(exUid)}
+                      style={{
+                        background: "rgba(255,255,255,0.06)",
+                        border: "none",
+                        color: C.textDim,
+                        fontSize: 13,
+                        cursor: "pointer",
+                        padding: "7px 12px",
+                        borderRadius: RADIUS.chip,
+                        fontWeight: 600
+                      }}
+                    >
+                      {showInfo[exUid] ? "▲ ⓘ What's this for" : "ⓘ What's this for"}
                     </button>
                     {!exDone && (
                       <button
@@ -752,6 +775,25 @@ export default function FitnessApp() {
                       lineHeight: 1.55
                     }}>
                       🎯 {ex.tip}
+                    </div>
+                  )}
+                  {showInfo[exUid] && (
+                    <div style={{
+                      marginTop: 10,
+                      padding: "14px",
+                      background: "rgba(255,255,255,0.04)",
+                      borderRadius: RADIUS.chip,
+                      fontSize: 14,
+                      color: "#c8c8da",
+                      lineHeight: 1.6
+                    }}>
+                      {ex.muscles && (
+                        <div style={{ marginBottom: 10 }}>
+                          <span style={{ color: C.text, fontWeight: 700 }}>🎯 Targets: </span>
+                          {ex.muscles.join(", ")}
+                        </div>
+                      )}
+                      <div>{categoryPurpose[ex.category]}</div>
                     </div>
                   )}
                 </div>
