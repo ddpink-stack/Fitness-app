@@ -461,7 +461,6 @@ export default function FitnessApp() {
   const [selectedDayId, setSelectedDayId] = useState(null);
   const [sheet, setSheet] = useState(null); // { type: "tip"|"video"|"info", ex, exUid }
   const [restTimer, setRestTimer] = useState(null); // { exUid, exName, total, secondsLeft }
-  const [preFinishSnapshot, setPreFinishSnapshot] = useState(null); // { workoutId, completedSets } — lets "Finish Workout" be undone
   const [editingSchedule, setEditingSchedule] = useState(false);
   const [draftDays, setDraftDays] = useState([]);
   const [foodQuery, setFoodQuery] = useState("");
@@ -585,27 +584,6 @@ export default function FitnessApp() {
   const progressPct = totalSets ? Math.min(100, Math.round((doneSets / totalSets) * 100)) : 0;
   const preWorkoutMeal = plan ? plan.nutrition.find((m) => m.time === "Pre Workout") : null;
   const postWorkoutMeal = plan ? plan.nutrition.find((m) => m.time === "Post Workout") : null;
-
-  // Captures the completedSets right before a day flips to 100%, no
-  // matter what triggered it (a single set tap, "Mark all done" on the
-  // last exercise, or the "Finish Workout" button) — so "Undo" always
-  // has something to restore to when it was reached by mistake. Guarded
-  // by prevWorkoutIdRef so switching to an already-finished day doesn't
-  // mistake a day-change for a fresh completion and capture the wrong
-  // day's sets.
-  const prevCompletedSetsRef = useRef(dayProgress.completedSets);
-  const prevWorkoutIdRef = useRef(workout ? workout.id : null);
-  const wasCompleteRef = useRef(false);
-  useEffect(() => {
-    if (!workout) return;
-    const sameDay = prevWorkoutIdRef.current === workout.id;
-    if (sameDay && progressPct === 100 && !wasCompleteRef.current) {
-      setPreFinishSnapshot({ workoutId: workout.id, completedSets: prevCompletedSetsRef.current });
-    }
-    wasCompleteRef.current = progressPct === 100;
-    prevWorkoutIdRef.current = workout.id;
-    prevCompletedSetsRef.current = dayProgress.completedSets;
-  }, [progressPct, dayProgress, workout]);
 
   // Logs a completed workout to history once every set is done, upserting
   // by day+date so revisiting an already-finished day doesn't duplicate it.
@@ -829,13 +807,13 @@ export default function FitnessApp() {
     setRestTimer(null);
   };
 
-  // Reverts whatever just marked this day 100% complete — a set tap,
-  // "Mark all done", or the "Finish Workout" button — restoring exactly
-  // the sets that were completed right before that happened.
+  // Resets this day back to not-started. Offered once the day shows
+  // 100% complete, regardless of what got it there (a set tap, "Mark
+  // all done" on one or more exercises, or "Finish Workout") — a
+  // partial, action-by-action undo left earlier exercises still marked
+  // done when someone completed several before catching the mistake.
   const undoFinishWorkout = () => {
-    if (!preFinishSnapshot || preFinishSnapshot.workoutId !== workout.id) return;
-    setDayProgress((current) => ({ ...current, completedSets: preFinishSnapshot.completedSets }));
-    setPreFinishSnapshot(null);
+    setDayProgress((current) => ({ ...current, completedSets: {} }));
   };
 
   const openSheet = (type, ex, exUid, extra = {}) => setSheet({ type, ex, exUid, ...extra });
@@ -1235,28 +1213,26 @@ export default function FitnessApp() {
                 <PartyPopper size={36} color={C.successBright} style={{ marginBottom: 10 }} />
                 <div style={{ fontWeight: 800, fontSize: 20, color: C.successBright }}>{workout.label} Complete!</div>
                 <div style={{ fontSize: 14, color: C.textDim, marginTop: 6 }}>Come back and tackle your next day.</div>
-                {preFinishSnapshot && preFinishSnapshot.workoutId === workout.id && (
-                  <button
-                    onClick={undoFinishWorkout}
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: 6,
-                      marginTop: 14,
-                      background: "none",
-                      border: `1px solid ${C.borderDone}`,
-                      borderRadius: RADIUS.pill,
-                      color: C.successBright,
-                      fontWeight: 700,
-                      fontSize: 13,
-                      padding: "9px 16px",
-                      cursor: "pointer"
-                    }}
-                  >
-                    <RotateCcw size={14} />
-                    Marked done by mistake? Undo
-                  </button>
-                )}
+                <button
+                  onClick={undoFinishWorkout}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                    marginTop: 14,
+                    background: "none",
+                    border: `1px solid ${C.borderDone}`,
+                    borderRadius: RADIUS.pill,
+                    color: C.successBright,
+                    fontWeight: 700,
+                    fontSize: 13,
+                    padding: "9px 16px",
+                    cursor: "pointer"
+                  }}
+                >
+                  <RotateCcw size={14} />
+                  Marked done by mistake? Undo
+                </button>
               </div>
             )}
           </div>
