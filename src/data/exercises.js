@@ -63,6 +63,7 @@ export const exerciseLibrary = {
       suggestedWeight: {
         unit: "kg total",
         step: 2.5,
+        equipmentFloor: 20,
         beginner: { min: 20, max: 20 },
         intermediate: { min: 40, max: 50 },
         advanced: { min: 60, max: 80 }
@@ -126,6 +127,7 @@ export const exerciseLibrary = {
       suggestedWeight: {
         unit: "kg total",
         step: 2.5,
+        equipmentFloor: 20,
         beginner: { min: 20, max: 20 },
         intermediate: { min: 35, max: 45 },
         advanced: { min: 50, max: 70 }

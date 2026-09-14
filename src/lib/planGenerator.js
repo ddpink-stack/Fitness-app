@@ -73,6 +73,45 @@ function formatWeight(value, unit) {
   return `${num} ${unit}`;
 }
 
+// Base suggestedWeight ranges assume a ~70kg adult male in his late 20s.
+// These factors shift that baseline toward the person actually training,
+// since a flat number-per-level ignores who's lifting it.
+const REFERENCE_BODYWEIGHT_KG = 70;
+
+// Rough, general strength-norm ratios (untrained/early-trained lifters):
+// upper-body pushing/pulling strength differs by sex more than leg
+// strength does, so scale each muscle group separately.
+const sexFactorByCategory = {
+  male: { push: 1, pull: 1, legs: 1 },
+  female: { push: 0.6, pull: 0.65, legs: 0.78 },
+  unspecified: { push: 0.8, pull: 0.82, legs: 0.9 }
+};
+
+function sexFactor(category, sex) {
+  const group = sexFactorByCategory[sex];
+  if (!group) return 1; // no answer on file (e.g. profile saved before this existed)
+  return group[category] ?? 1;
+}
+
+function ageFactor(age) {
+  if (!age) return 1;
+  if (age < 40) return 1;
+  if (age < 50) return 0.92;
+  if (age < 60) return 0.85;
+  return 0.75;
+}
+
+function bodyweightFactor(bodyWeightKg) {
+  if (!bodyWeightKg) return 1;
+  const raw = bodyWeightKg / REFERENCE_BODYWEIGHT_KG;
+  return Math.min(1.5, Math.max(0.6, raw));
+}
+
+function personalizationScale(category, profile) {
+  const scale = bodyweightFactor(profile.bodyWeight) * sexFactor(category, profile.sex) * ageFactor(profile.age);
+  return Math.min(1.8, Math.max(0.45, scale));
+}
+
 function pickExercise(category, dayIndex, slotIndex, available, used) {
   const pool = exerciseLibrary[category].filter(
     (ex) => ex.equipment.some((e) => available.includes(e)) && !used.has(ex.id)
@@ -100,11 +139,17 @@ export function generateWeekPlan(profile, referenceDate = new Date()) {
       const picked = pickExercise(category, dayIndex, slotIndex, available, used);
       const weightConf = picked.suggestedWeight;
       const range = weightConf ? weightConf[level] : null;
-      const weightsBySet = range
-        ? rampWeights(range.min, range.max, sets, weightConf.step ?? 1).map((w) =>
-            formatWeight(w, weightConf.unit)
-          )
-        : null;
+      let weightsBySet = null;
+      if (range) {
+        const scale = personalizationScale(category === "core" ? "pull" : category, profile);
+        let min = range.min * scale;
+        let max = range.max * scale;
+        if (weightConf.equipmentFloor) {
+          min = Math.max(min, weightConf.equipmentFloor);
+          max = Math.max(max, weightConf.equipmentFloor);
+        }
+        weightsBySet = rampWeights(min, max, sets, weightConf.step ?? 1).map((w) => formatWeight(w, weightConf.unit));
+      }
       return { ...picked, sets, rest, weightsBySet };
     });
 
