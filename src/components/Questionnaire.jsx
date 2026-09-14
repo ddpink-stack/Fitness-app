@@ -116,18 +116,20 @@ export default function Questionnaire({ onComplete }) {
       fontFamily: "'Inter', 'Helvetica Neue', sans-serif",
       background: "#0a0a0f",
       minHeight: "100vh",
-      color: "#f0f0f5",
+      color: "#f5f5f7",
       maxWidth: 420,
       margin: "0 auto",
-      padding: "24px 20px",
-      boxSizing: "border-box"
+      padding: "32px 24px",
+      boxSizing: "border-box",
+      display: "flex",
+      flexDirection: "column"
     }}>
-      <div style={{ fontSize: 11, color: "#6c63ff", letterSpacing: 2, textTransform: "uppercase", marginBottom: 8 }}>
+      <div style={{ fontSize: 12, color: "#b3a4ff", letterSpacing: 2.5, textTransform: "uppercase", marginBottom: 10, fontWeight: 700 }}>
         Step {step + 1} of {questions.length}
       </div>
-      <div style={{ background: "#1e1e3a", borderRadius: 99, height: 4, marginBottom: 28 }}>
+      <div style={{ background: "rgba(255,255,255,0.08)", borderRadius: 99, height: 6, marginBottom: 36 }}>
         <div style={{
-          background: "linear-gradient(90deg, #6c63ff, #a78bfa)",
+          background: "linear-gradient(90deg, #7c6cff, #b3a4ff)",
           width: `${((step + 1) / questions.length) * 100}%`,
           height: "100%",
           borderRadius: 99,
@@ -135,9 +137,9 @@ export default function Questionnaire({ onComplete }) {
         }} />
       </div>
 
-      <h1 style={{ fontSize: 22, fontWeight: 700, marginBottom: question.hint ? 8 : 20 }}>{question.label}</h1>
+      <h1 style={{ fontSize: 28, fontWeight: 800, marginBottom: question.hint ? 10 : 28, lineHeight: 1.25, letterSpacing: -0.5 }}>{question.label}</h1>
       {question.hint && (
-        <div style={{ fontSize: 13, color: "#8888aa", marginBottom: 20, lineHeight: 1.5 }}>{question.hint}</div>
+        <div style={{ fontSize: 15, color: "#9898ac", marginBottom: 28, lineHeight: 1.6 }}>{question.hint}</div>
       )}
 
       {isNumber ? (
@@ -155,23 +157,23 @@ export default function Questionnaire({ onComplete }) {
               autoFocus
               style={{
                 width: "100%",
-                background: "#111118",
-                border: "1px solid #1e1e3a",
-                borderRadius: 14,
-                padding: "16px 60px 16px 18px",
-                color: "#f0f0f5",
-                fontSize: 18,
+                background: "#15151f",
+                border: "1px solid rgba(255,255,255,0.08)",
+                borderRadius: 16,
+                padding: "20px 68px 20px 20px",
+                color: "#f5f5f7",
+                fontSize: 22,
                 fontWeight: 700,
                 boxSizing: "border-box"
               }}
             />
             <span style={{
               position: "absolute",
-              right: 18,
+              right: 20,
               top: "50%",
               transform: "translateY(-50%)",
-              color: "#666680",
-              fontSize: 14,
+              color: "#6b6b80",
+              fontSize: 15,
               fontWeight: 600
             }}>
               {question.unit}
@@ -181,15 +183,15 @@ export default function Questionnaire({ onComplete }) {
             onClick={submitNumber}
             disabled={numberInput === ""}
             style={{
-              marginTop: 14,
+              marginTop: 16,
               width: "100%",
-              background: numberInput === "" ? "#1e1e3a" : "linear-gradient(135deg, #6c63ff, #a78bfa)",
+              background: numberInput === "" ? "rgba(255,255,255,0.06)" : "linear-gradient(135deg, #7c6cff, #b3a4ff)",
               border: "none",
-              borderRadius: 14,
-              color: numberInput === "" ? "#666680" : "#fff",
+              borderRadius: 16,
+              color: numberInput === "" ? "#6b6b80" : "#fff",
               fontWeight: 700,
-              fontSize: 14,
-              padding: "14px 20px",
+              fontSize: 16,
+              padding: "17px 20px",
               cursor: numberInput === "" ? "default" : "pointer"
             }}
           >
@@ -197,23 +199,23 @@ export default function Questionnaire({ onComplete }) {
           </button>
         </div>
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           {question.options.map((opt) => (
             <button
               key={opt.value}
               onClick={() => choose(opt.value)}
               style={{
                 textAlign: "left",
-                background: "#111118",
-                border: "1px solid #1e1e3a",
-                borderRadius: 14,
-                padding: "16px 18px",
-                color: "#f0f0f5",
+                background: "#15151f",
+                border: "1px solid rgba(255,255,255,0.08)",
+                borderRadius: 16,
+                padding: "18px 20px",
+                color: "#f5f5f7",
                 cursor: "pointer"
               }}
             >
-              <div style={{ fontWeight: 700, fontSize: 15 }}>{opt.label}</div>
-              {opt.desc && <div style={{ fontSize: 12, color: "#8888aa", marginTop: 2 }}>{opt.desc}</div>}
+              <div style={{ fontWeight: 700, fontSize: 17 }}>{opt.label}</div>
+              {opt.desc && <div style={{ fontSize: 14, color: "#9898ac", marginTop: 4 }}>{opt.desc}</div>}
             </button>
           ))}
         </div>
@@ -223,14 +225,15 @@ export default function Questionnaire({ onComplete }) {
         <button
           onClick={() => setStep(step - 1)}
           style={{
-            marginTop: 20,
+            marginTop: 24,
             background: "none",
             border: "none",
-            color: "#6c63ff",
-            fontSize: 13,
+            color: "#b3a4ff",
+            fontSize: 15,
             fontWeight: 600,
             cursor: "pointer",
-            padding: 0
+            padding: 0,
+            alignSelf: "flex-start"
           }}
         >
           ← Back

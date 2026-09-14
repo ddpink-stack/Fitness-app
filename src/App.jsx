@@ -12,6 +12,30 @@ const CUSTOM_DAYS_KEY = "fitness-app:customDays";
 const FOOD_LOG_KEY = "fitness-app:foodLog";
 const WEEKDAY_NAMES = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
+// Shared design tokens — one dark, purple-accented system used everywhere
+// so cards, type, and spacing stay consistent instead of each screen
+// inventing its own numbers.
+const C = {
+  bg: "#0a0a0f",
+  card: "#15151f",
+  cardDone: "#0e1f16",
+  inset: "#0d0d16",
+  border: "rgba(255,255,255,0.07)",
+  borderDone: "rgba(74,222,128,0.28)",
+  text: "#f5f5f7",
+  textDim: "#9898ac",
+  textFaint: "#6b6b80",
+  accent: "#7c6cff",
+  accentSoft: "#b3a4ff",
+  success: "#34d399",
+  successBright: "#4ade80",
+  danger: "#f87171",
+  warn: "#fbbf24"
+};
+const RADIUS = { card: 20, control: 14, pill: 999, chip: 12 };
+const CARD = { background: C.card, border: `1px solid ${C.border}`, borderRadius: RADIUS.card, padding: 20, marginBottom: 16 };
+const TAB_BAR_HEIGHT = 78;
+
 function todayKey() {
   return new Date().toISOString().slice(0, 10);
 }
@@ -407,33 +431,32 @@ export default function FitnessApp() {
   return (
     <div style={{
       fontFamily: "'Inter', 'Helvetica Neue', sans-serif",
-      background: "#0a0a0f",
+      background: C.bg,
       minHeight: "100vh",
-      color: "#f0f0f5",
+      color: C.text,
       maxWidth: 420,
       margin: "0 auto",
       position: "relative",
-      paddingBottom: 80
+      paddingBottom: TAB_BAR_HEIGHT + 16
     }}>
       <div style={{
-        background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)",
-        padding: "28px 20px 20px",
-        borderBottom: "1px solid #1e1e3a"
+        background: "linear-gradient(160deg, #201c3d 0%, #171a30 55%, #0f1220 100%)",
+        padding: "26px 20px 24px"
       }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-          <div style={{ fontSize: 11, color: "#6c63ff", letterSpacing: 2, textTransform: "uppercase" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
+          <div style={{ fontSize: 12, color: C.accentSoft, letterSpacing: 2.5, textTransform: "uppercase", fontWeight: 700 }}>
             Your Plan
           </div>
-          <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+          <div style={{ display: "flex", gap: 14, alignItems: "center", flexShrink: 0 }}>
             <button
               onClick={exportBackup}
-              style={{ background: "none", border: "none", color: "#666680", fontSize: 11, cursor: "pointer", padding: 0 }}
+              style={{ background: "none", border: "none", color: C.textFaint, fontSize: 12, cursor: "pointer", padding: 0 }}
             >
               ⬇ Export
             </button>
             <button
               onClick={() => importInputRef.current?.click()}
-              style={{ background: "none", border: "none", color: "#666680", fontSize: 11, cursor: "pointer", padding: 0 }}
+              style={{ background: "none", border: "none", color: C.textFaint, fontSize: 12, cursor: "pointer", padding: 0 }}
             >
               ⬆ Import
             </button>
@@ -450,26 +473,26 @@ export default function FitnessApp() {
             />
             <button
               onClick={retakeQuestionnaire}
-              style={{ background: "none", border: "none", color: "#666680", fontSize: 11, cursor: "pointer", padding: 0 }}
+              style={{ background: "none", border: "none", color: C.textFaint, fontSize: 12, cursor: "pointer", padding: 0 }}
             >
-              Retake questionnaire
+              Retake
             </button>
           </div>
         </div>
 
-        <div style={{ display: "flex", gap: 6, overflowX: "auto", marginTop: 10, paddingBottom: 2 }}>
+        <div style={{ display: "flex", gap: 8, overflowX: "auto", marginTop: 16, paddingBottom: 2 }}>
           {plan.trainingDays.map((d) => (
             <button
               key={d.id}
               onClick={() => setSelectedDayId(d.id)}
               style={{
                 flexShrink: 0,
-                padding: "6px 12px",
-                borderRadius: 99,
-                border: d.id === workout.id ? "1px solid #6c63ff" : "1px solid #1e1e3a",
-                background: d.id === workout.id ? "rgba(108,99,255,0.15)" : "transparent",
-                color: d.id === workout.id ? "#a78bfa" : "#666680",
-                fontSize: 12,
+                padding: "10px 18px",
+                borderRadius: RADIUS.pill,
+                border: d.id === workout.id ? `1px solid ${C.accent}` : `1px solid ${C.border}`,
+                background: d.id === workout.id ? "rgba(124,108,255,0.18)" : "transparent",
+                color: d.id === workout.id ? C.accentSoft : C.textDim,
+                fontSize: 14,
                 fontWeight: 700,
                 cursor: "pointer",
                 whiteSpace: "nowrap"
@@ -480,75 +503,48 @@ export default function FitnessApp() {
           ))}
         </div>
 
-        <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: -0.5, marginTop: 14 }}>{workout.label}</div>
-        <div style={{ fontSize: 12, color: "#8888aa", marginTop: 2 }}>{workout.dateLabel}</div>
+        <div style={{ fontSize: 30, fontWeight: 800, letterSpacing: -0.8, marginTop: 22, lineHeight: 1.15 }}>{workout.label}</div>
+        <div style={{ fontSize: 15, color: C.textDim, marginTop: 4, fontWeight: 500 }}>{workout.dateLabel}</div>
 
-        <div style={{ marginTop: 16 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#8888aa", marginBottom: 6 }}>
-            <span>{doneSets}/{totalSets} sets done</span>
-            <span style={{ color: progressPct === 100 ? "#4ade80" : "#6c63ff" }}>{progressPct}%</span>
+        <div style={{ marginTop: 22 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8 }}>
+            <span style={{ fontSize: 14, color: C.textDim, fontWeight: 500 }}>{doneSets}/{totalSets} sets done</span>
+            <span style={{ fontSize: 20, fontWeight: 800, color: progressPct === 100 ? C.successBright : C.accentSoft }}>{progressPct}%</span>
           </div>
-          <div style={{ background: "#1e1e3a", borderRadius: 99, height: 6 }}>
+          <div style={{ background: "rgba(255,255,255,0.08)", borderRadius: RADIUS.pill, height: 10 }}>
             <div style={{
-              background: progressPct === 100 ? "linear-gradient(90deg, #4ade80, #22c55e)" : "linear-gradient(90deg, #6c63ff, #a78bfa)",
+              background: progressPct === 100 ? "linear-gradient(90deg, #4ade80, #22c55e)" : "linear-gradient(90deg, #7c6cff, #b3a4ff)",
               width: `${progressPct}%`,
               height: "100%",
-              borderRadius: 99,
+              borderRadius: RADIUS.pill,
               transition: "width 0.4s ease"
             }} />
           </div>
         </div>
       </div>
 
-      <div style={{
-        display: "flex",
-        background: "#111118",
-        borderBottom: "1px solid #1e1e3a",
-        position: "sticky",
-        top: 0,
-        zIndex: 10
-      }}>
-        {tabs.map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            style={{
-              flex: 1,
-              padding: "12px 4px",
-              border: "none",
-              background: "none",
-              color: activeTab === tab.id ? "#a78bfa" : "#666680",
-              fontSize: 12,
-              fontWeight: activeTab === tab.id ? 700 : 400,
-              cursor: "pointer",
-              borderBottom: activeTab === tab.id ? "2px solid #6c63ff" : "2px solid transparent",
-              transition: "all 0.2s"
-            }}
-          >
-            <div style={{ fontSize: 18, marginBottom: 2 }}>{tab.icon}</div>
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      <div style={{ padding: "16px 16px 0" }}>
+      <div style={{ padding: "20px 20px 0" }}>
         {activeTab === "workout" && (
           <div>
-            <div style={{
-              background: "#111118",
-              border: "1px solid #1e1e3a",
-              borderRadius: 14,
-              padding: 16,
-              marginBottom: 12
-            }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-                <span style={{ fontSize: 18 }}>🔥</span>
-                <span style={{ fontWeight: 700, fontSize: 15 }}>Warm Up — 5 min</span>
-                <span style={{ marginLeft: "auto", fontSize: 11, color: "#f59e0b" }}>Required</span>
+            <div style={CARD}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+                <span style={{ fontSize: 20 }}>🔥</span>
+                <span style={{ fontWeight: 700, fontSize: 17 }}>Warm Up — 5 min</span>
+                <span style={{
+                  marginLeft: "auto",
+                  fontSize: 11,
+                  fontWeight: 700,
+                  color: C.warn,
+                  background: "rgba(251,191,36,0.12)",
+                  padding: "4px 10px",
+                  borderRadius: RADIUS.pill
+                }}>
+                  Required
+                </span>
               </div>
               {["3 min easy treadmill walk (flat)", "10 arm circles each direction", "10 bodyweight squats"].map((item, i) => (
-                <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0", fontSize: 13, color: "#ccccdd" }}>
-                  <span style={{ color: "#6c63ff", fontSize: 11 }}>●</span> {item}
+                <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 0", fontSize: 15, color: "#d4d4e0" }}>
+                  <span style={{ color: C.accentSoft, fontSize: 8 }}>●</span> {item}
                 </div>
               ))}
             </div>
@@ -560,39 +556,48 @@ export default function FitnessApp() {
               const exDone = doneCount === ex.sets;
               return (
                 <div key={exUid} style={{
-                  background: exDone ? "#0d1f0f" : "#111118",
-                  border: `1px solid ${exDone ? "#1a4d1f" : "#1e1e3a"}`,
-                  borderRadius: 14,
-                  padding: 16,
-                  marginBottom: 12,
+                  background: exDone ? C.cardDone : C.card,
+                  border: `1px solid ${exDone ? C.borderDone : C.border}`,
+                  borderRadius: RADIUS.card,
+                  padding: 20,
+                  marginBottom: 16,
                   transition: "all 0.3s"
                 }}>
-                  <div style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 12 }}>
-                    <span style={{ fontSize: 24 }}>{ex.emoji}</span>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: 700, fontSize: 15, display: "flex", alignItems: "center", gap: 6 }}>
+                  <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 14 }}>
+                    <span style={{ fontSize: 28 }}>{ex.emoji}</span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontWeight: 700, fontSize: 18, display: "flex", alignItems: "center", gap: 8, lineHeight: 1.3 }}>
                         {ex.name}
-                        {exDone && <span style={{ fontSize: 14, color: "#4ade80" }}>✓</span>}
+                        {exDone && <span style={{ fontSize: 15, color: C.successBright }}>✓</span>}
                       </div>
-                      <div style={{ fontSize: 12, color: "#8888aa", marginTop: 2 }}>
+                      <div style={{ fontSize: 14, color: C.textDim, marginTop: 4 }}>
                         {ex.sets} sets · {ex.reps} · {ex.rest}
                       </div>
                       {ex.weightsBySet && (
-                        <div style={{ fontSize: 12, color: "#a78bfa", marginTop: 2, fontWeight: 600 }}>
-                          🏋️ Ramp up: {ex.weightsBySet.join(" → ")}
+                        <div style={{
+                          fontSize: 13,
+                          color: C.accentSoft,
+                          marginTop: 8,
+                          fontWeight: 600,
+                          background: "rgba(124,108,255,0.1)",
+                          padding: "7px 10px",
+                          borderRadius: RADIUS.chip,
+                          lineHeight: 1.5
+                        }}>
+                          🏋️ {ex.weightsBySet.join(" → ")}
                         </div>
                       )}
                     </div>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "flex-end" }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-end", flexShrink: 0 }}>
                       <button
                         onClick={() => toggleVideo(exUid)}
                         style={{
-                          background: "#1a0000",
-                          border: "1px solid #3a0000",
-                          color: "#ff4444",
-                          borderRadius: 8,
-                          padding: "5px 10px",
-                          fontSize: 11,
+                          background: "rgba(255,68,68,0.12)",
+                          border: "1px solid rgba(255,68,68,0.25)",
+                          color: "#ff6b6b",
+                          borderRadius: RADIUS.chip,
+                          padding: "7px 12px",
+                          fontSize: 12,
                           fontWeight: 700,
                           cursor: "pointer",
                           whiteSpace: "nowrap",
@@ -608,11 +613,11 @@ export default function FitnessApp() {
                           onClick={() => swapExercise(exIndex)}
                           style={{
                             background: "none",
-                            border: "1px solid #2a2a44",
-                            color: "#8888aa",
-                            borderRadius: 8,
-                            padding: "5px 10px",
-                            fontSize: 11,
+                            border: `1px solid ${C.border}`,
+                            color: C.textDim,
+                            borderRadius: RADIUS.chip,
+                            padding: "7px 12px",
+                            fontSize: 12,
                             fontWeight: 700,
                             cursor: "pointer",
                             whiteSpace: "nowrap"
@@ -625,24 +630,24 @@ export default function FitnessApp() {
                   </div>
 
                   <div style={{
-                    background: "#0d0d1a",
-                    borderRadius: 8,
-                    padding: "8px 12px",
-                    fontSize: 12,
-                    color: "#9999bb",
-                    marginBottom: 12,
-                    lineHeight: 1.5
+                    background: C.inset,
+                    borderRadius: RADIUS.chip,
+                    padding: "12px 14px",
+                    fontSize: 14,
+                    color: "#a8a8bd",
+                    marginBottom: 14,
+                    lineHeight: 1.55
                   }}>
                     💡 {ex.cue}
                   </div>
 
                   {showVideo[exUid] && (
-                    <div style={{ marginBottom: 12 }}>
+                    <div style={{ marginBottom: 14 }}>
                       <div style={{
                         position: "relative",
                         width: "100%",
                         paddingBottom: "56.25%",
-                        borderRadius: 8,
+                        borderRadius: RADIUS.chip,
                         overflow: "hidden",
                         background: "#000"
                       }}>
@@ -658,14 +663,14 @@ export default function FitnessApp() {
                         href={`https://www.youtube.com/watch?v=${ex.videoId}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        style={{ display: "inline-block", marginTop: 6, fontSize: 11, color: "#6c63ff", textDecoration: "none" }}
+                        style={{ display: "inline-block", marginTop: 8, fontSize: 13, color: C.accentSoft, textDecoration: "none" }}
                       >
                         Open in YouTube ↗
                       </a>
                     </div>
                   )}
 
-                  <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+                  <div style={{ display: "flex", gap: 10, marginBottom: 14 }}>
                     {Array.from({ length: ex.sets }, (_, i) => {
                       const key = `${exUid}-${i + 1}`;
                       const done = dayProgress.completedSets[key];
@@ -675,13 +680,13 @@ export default function FitnessApp() {
                           onClick={() => toggleSet(exUid, i + 1, ex.name, ex.rest, i === ex.sets - 1)}
                           style={{
                             flex: 1,
-                            padding: "10px 0",
-                            borderRadius: 10,
-                            border: done ? "none" : "1px solid #2a2a44",
-                            background: done ? "linear-gradient(135deg, #6c63ff, #a78bfa)" : "#0d0d1a",
-                            color: done ? "#fff" : "#666680",
+                            padding: "15px 0",
+                            borderRadius: RADIUS.control,
+                            border: done ? "none" : `1px solid ${C.border}`,
+                            background: done ? "linear-gradient(135deg, #7c6cff, #b3a4ff)" : C.inset,
+                            color: done ? "#fff" : C.textDim,
                             fontWeight: 700,
-                            fontSize: 13,
+                            fontSize: 16,
                             cursor: "pointer",
                             transition: "all 0.2s"
                           }}
@@ -689,10 +694,10 @@ export default function FitnessApp() {
                           <div>{done ? "✓" : `Set ${i + 1}`}</div>
                           {ex.weightsBySet && (
                             <div style={{
-                              fontSize: 9,
+                              fontSize: 11,
                               fontWeight: 600,
-                              marginTop: 2,
-                              opacity: done ? 0.9 : 0.75
+                              marginTop: 3,
+                              opacity: done ? 0.9 : 0.7
                             }}>
                               {ex.weightsBySet[i]}
                             </div>
@@ -702,47 +707,49 @@ export default function FitnessApp() {
                     })}
                   </div>
 
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div style={{ display: "flex", gap: 8 }}>
                     <button
                       onClick={() => toggleTip(exUid)}
                       style={{
-                        background: "none",
+                        background: "rgba(124,108,255,0.1)",
                         border: "none",
-                        color: "#6c63ff",
-                        fontSize: 12,
+                        color: C.accentSoft,
+                        fontSize: 13,
                         cursor: "pointer",
-                        padding: 0,
+                        padding: "7px 12px",
+                        borderRadius: RADIUS.chip,
                         fontWeight: 600
                       }}
                     >
-                      {showTip[exUid] ? "▲ Hide coach tip" : "▼ Coach tip"}
+                      {showTip[exUid] ? "▲ Coach tip" : "▼ Coach tip"}
                     </button>
                     {!exDone && (
                       <button
                         onClick={() => completeAllSets(exUid, ex.sets)}
                         style={{
-                          background: "none",
+                          background: "rgba(74,222,128,0.1)",
                           border: "none",
-                          color: "#4ade80",
-                          fontSize: 12,
+                          color: C.successBright,
+                          fontSize: 13,
                           cursor: "pointer",
-                          padding: 0,
+                          padding: "7px 12px",
+                          borderRadius: RADIUS.chip,
                           fontWeight: 600
                         }}
                       >
-                        ✓ Mark all sets done
+                        ✓ Mark all done
                       </button>
                     )}
                   </div>
                   {showTip[exUid] && (
                     <div style={{
-                      marginTop: 8,
-                      padding: "8px 12px",
-                      background: "#110d22",
-                      borderRadius: 8,
-                      fontSize: 12,
-                      color: "#c4b5fd",
-                      lineHeight: 1.5
+                      marginTop: 10,
+                      padding: "12px 14px",
+                      background: "rgba(124,108,255,0.08)",
+                      borderRadius: RADIUS.chip,
+                      fontSize: 14,
+                      color: "#cdbfff",
+                      lineHeight: 1.55
                     }}>
                       🎯 {ex.tip}
                     </div>
@@ -751,32 +758,26 @@ export default function FitnessApp() {
               );
             })}
 
-            <div style={{
-              background: "#111118",
-              border: "1px solid #1e1e3a",
-              borderRadius: 14,
-              padding: 16,
-              marginBottom: 12
-            }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-                <span style={{ fontSize: 20 }}>🏃</span>
+            <div style={CARD}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+                <span style={{ fontSize: 22 }}>🏃</span>
                 <div>
-                  <div style={{ fontWeight: 700, fontSize: 15 }}>Treadmill Cardio</div>
-                  <div style={{ fontSize: 12, color: "#8888aa" }}>{workout.cardio.duration}</div>
+                  <div style={{ fontWeight: 700, fontSize: 17 }}>Treadmill Cardio</div>
+                  <div style={{ fontSize: 14, color: C.textDim, marginTop: 2 }}>{workout.cardio.duration}</div>
                 </div>
               </div>
               {workout.cardio.details.map((row, i) => (
                 <div key={i} style={{
                   display: "flex",
                   justifyContent: "space-between",
-                  padding: "8px 0",
-                  fontSize: 13,
-                  borderTop: i > 0 ? "1px solid #1a1a28" : "none",
-                  color: i === workout.cardio.details.length - 1 ? "#8888aa" : "#f0f0f5"
+                  padding: "10px 0",
+                  fontSize: 14,
+                  borderTop: i > 0 ? `1px solid ${C.border}` : "none",
+                  color: i === workout.cardio.details.length - 1 ? C.textDim : C.text
                 }}>
-                  <span style={{ color: "#6c63ff", fontWeight: 600 }}>{row.time}</span>
+                  <span style={{ color: C.accentSoft, fontWeight: 600 }}>{row.time}</span>
                   <span>{row.speed}</span>
-                  <span style={{ color: "#a78bfa" }}>{row.incline}</span>
+                  <span style={{ color: C.accentSoft }}>{row.incline}</span>
                 </div>
               ))}
             </div>
@@ -787,41 +788,36 @@ export default function FitnessApp() {
                 style={{
                   background: "linear-gradient(135deg, #16a34a, #22c55e)",
                   border: "none",
-                  borderRadius: 14,
+                  borderRadius: RADIUS.control,
                   color: "#fff",
                   fontWeight: 700,
-                  fontSize: 14,
-                  padding: "14px 20px",
+                  fontSize: 16,
+                  padding: "18px 20px",
                   cursor: "pointer",
                   width: "100%",
-                  marginBottom: 12
+                  marginBottom: 16,
+                  boxShadow: "0 8px 24px rgba(34,197,94,0.25)"
                 }}
               >
-                ✅ Finish Workout — mark remaining sets done
+                ✅ Finish Workout
               </button>
             )}
 
-            <div style={{
-              background: "#111118",
-              border: "1px solid #1e1e3a",
-              borderRadius: 14,
-              padding: 16,
-              marginBottom: 12
-            }}>
-              <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 10 }}>📝 Post-Workout Notes</div>
+            <div style={CARD}>
+              <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 12 }}>📝 Post-Workout Notes</div>
               <textarea
                 placeholder="How did it feel? Any exercise that was hard? Weights used?"
                 value={dayProgress.notes}
                 onChange={(e) => setDayProgress((current) => ({ ...current, notes: e.target.value }))}
                 style={{
                   width: "100%",
-                  background: "#0d0d1a",
-                  border: "1px solid #2a2a44",
-                  borderRadius: 8,
-                  color: "#f0f0f5",
-                  padding: 10,
-                  fontSize: 13,
-                  minHeight: 80,
+                  background: C.inset,
+                  border: `1px solid ${C.border}`,
+                  borderRadius: RADIUS.chip,
+                  color: C.text,
+                  padding: 14,
+                  fontSize: 15,
+                  minHeight: 90,
                   resize: "none",
                   fontFamily: "inherit",
                   boxSizing: "border-box"
@@ -830,14 +826,14 @@ export default function FitnessApp() {
               <button
                 onClick={() => setSavedNote(true)}
                 style={{
-                  marginTop: 8,
-                  background: "linear-gradient(135deg, #6c63ff, #a78bfa)",
+                  marginTop: 10,
+                  background: "linear-gradient(135deg, #7c6cff, #b3a4ff)",
                   border: "none",
-                  borderRadius: 8,
+                  borderRadius: RADIUS.chip,
                   color: "#fff",
                   fontWeight: 700,
-                  fontSize: 13,
-                  padding: "10px 20px",
+                  fontSize: 15,
+                  padding: "13px 20px",
                   cursor: "pointer",
                   width: "100%"
                 }}
@@ -848,16 +844,16 @@ export default function FitnessApp() {
 
             {progressPct === 100 && (
               <div style={{
-                background: "linear-gradient(135deg, #064e3b, #065f46)",
-                border: "1px solid #047857",
-                borderRadius: 14,
-                padding: 20,
+                background: "linear-gradient(135deg, #0a4a34, #0f6b4a)",
+                border: "1px solid rgba(52,211,153,0.35)",
+                borderRadius: RADIUS.card,
+                padding: 28,
                 textAlign: "center",
-                marginBottom: 12
+                marginBottom: 16
               }}>
-                <div style={{ fontSize: 32, marginBottom: 8 }}>🎉</div>
-                <div style={{ fontWeight: 700, fontSize: 16, color: "#4ade80" }}>{workout.label} Complete!</div>
-                <div style={{ fontSize: 13, color: "#6ee7b7", marginTop: 4 }}>Come back and tackle your next day.</div>
+                <div style={{ fontSize: 40, marginBottom: 10 }}>🎉</div>
+                <div style={{ fontWeight: 800, fontSize: 20, color: C.successBright }}>{workout.label} Complete!</div>
+                <div style={{ fontSize: 14, color: "#8fe0bd", marginTop: 6 }}>Come back and tackle your next day.</div>
               </div>
             )}
           </div>
@@ -865,17 +861,11 @@ export default function FitnessApp() {
 
         {activeTab === "nutrition" && (
           <div>
-            <div style={{
-              background: "#111118",
-              border: "1px solid #1e1e3a",
-              borderRadius: 14,
-              padding: 16,
-              marginBottom: 12
-            }}>
-              <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 4 }}>
+            <div style={CARD}>
+              <div style={{ fontWeight: 700, fontSize: 17, marginBottom: 6 }}>
                 🎯 Your Targets — {goalLabels[profile.goal] ?? "General Fitness"}
               </div>
-              <div style={{ fontSize: 11, color: "#8888aa", marginBottom: 14, lineHeight: 1.5 }}>
+              <div style={{ fontSize: 13, color: C.textDim, marginBottom: 16, lineHeight: 1.6 }}>
                 {plan.nutritionTargets.tip}
               </div>
               <div style={{ display: "flex", gap: 8 }}>
@@ -885,42 +875,36 @@ export default function FitnessApp() {
                   { label: "Carbs", value: plan.nutritionTargets.carbsG, unit: "g" },
                   { label: "Fat", value: plan.nutritionTargets.fatG, unit: "g" }
                 ].map((m, i) => (
-                  <div key={i} style={{ flex: 1, textAlign: "center", background: "#0d0d1a", borderRadius: 10, padding: "10px 4px" }}>
-                    <div style={{ fontSize: 16, fontWeight: 700, color: "#a78bfa" }}>{m.value}</div>
-                    <div style={{ fontSize: 9, color: "#8888aa", marginTop: 2 }}>{m.label} ({m.unit})</div>
+                  <div key={i} style={{ flex: 1, textAlign: "center", background: C.inset, borderRadius: RADIUS.chip, padding: "14px 4px" }}>
+                    <div style={{ fontSize: 19, fontWeight: 800, color: C.accentSoft }}>{m.value}</div>
+                    <div style={{ fontSize: 11, color: C.textDim, marginTop: 4 }}>{m.label} ({m.unit})</div>
                   </div>
                 ))}
               </div>
             </div>
 
-            <div style={{
-              background: "#111118",
-              border: "1px solid #1e1e3a",
-              borderRadius: 14,
-              padding: 16,
-              marginBottom: 12
-            }}>
-              <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 12 }}>🍽️ Today's Food Log</div>
+            <div style={CARD}>
+              <div style={{ fontWeight: 700, fontSize: 17, marginBottom: 14 }}>🍽️ Today's Food Log</div>
 
-              <div style={{ marginBottom: 14 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#8888aa", marginBottom: 6 }}>
-                  <span>{Math.round(foodTotals.calories)} / {plan.nutritionTargets.calories} kcal</span>
-                  <span style={{ color: foodTotals.calories > plan.nutritionTargets.calories ? "#f87171" : "#4ade80" }}>
+              <div style={{ marginBottom: 18 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14, color: C.textDim, marginBottom: 8 }}>
+                  <span style={{ fontWeight: 600, color: C.text }}>{Math.round(foodTotals.calories)} / {plan.nutritionTargets.calories} kcal</span>
+                  <span style={{ fontWeight: 700, color: foodTotals.calories > plan.nutritionTargets.calories ? C.danger : C.successBright }}>
                     {foodTotals.calories === 0 ? "Not logged yet" : foodTotals.calories > plan.nutritionTargets.calories ? "Over target" : "On track"}
                   </span>
                 </div>
-                <div style={{ background: "#1e1e3a", borderRadius: 99, height: 6 }}>
+                <div style={{ background: "rgba(255,255,255,0.08)", borderRadius: RADIUS.pill, height: 10 }}>
                   <div style={{
                     background: foodTotals.calories > plan.nutritionTargets.calories
                       ? "linear-gradient(90deg, #f87171, #ef4444)"
-                      : "linear-gradient(90deg, #6c63ff, #a78bfa)",
+                      : "linear-gradient(90deg, #7c6cff, #b3a4ff)",
                     width: `${Math.min(100, (foodTotals.calories / plan.nutritionTargets.calories) * 100)}%`,
                     height: "100%",
-                    borderRadius: 99,
+                    borderRadius: RADIUS.pill,
                     transition: "width 0.4s ease"
                   }} />
                 </div>
-                <div style={{ fontSize: 11, color: "#8888aa", marginTop: 6 }}>
+                <div style={{ fontSize: 13, color: C.textDim, marginTop: 8 }}>
                   Protein: {Math.round(foodTotals.protein)}g / {plan.nutritionTargets.proteinG}g
                 </div>
               </div>
@@ -931,19 +915,19 @@ export default function FitnessApp() {
                 placeholder="Search food e.g. chapati, rice, egg..."
                 style={{
                   width: "100%",
-                  background: "#0d0d1a",
-                  border: "1px solid #2a2a44",
-                  borderRadius: 8,
-                  color: "#f0f0f5",
-                  padding: 10,
-                  fontSize: 13,
+                  background: C.inset,
+                  border: `1px solid ${C.border}`,
+                  borderRadius: RADIUS.chip,
+                  color: C.text,
+                  padding: 14,
+                  fontSize: 15,
                   boxSizing: "border-box",
-                  marginBottom: foodQuery ? 8 : 0
+                  marginBottom: foodQuery ? 10 : 0
                 }}
               />
 
               {foodQuery.trim().length > 0 && !customFoodMode && (
-                <div style={{ marginBottom: 8 }}>
+                <div style={{ marginBottom: 10 }}>
                   {foodMatches.map((f, i) => (
                     <button
                       key={i}
@@ -953,28 +937,28 @@ export default function FitnessApp() {
                         justifyContent: "space-between",
                         alignItems: "center",
                         width: "100%",
-                        background: "#0d0d1a",
-                        border: "1px solid #2a2a44",
-                        borderRadius: 8,
-                        padding: "8px 10px",
-                        marginBottom: 6,
+                        background: C.inset,
+                        border: `1px solid ${C.border}`,
+                        borderRadius: RADIUS.chip,
+                        padding: "12px 14px",
+                        marginBottom: 8,
                         cursor: "pointer",
-                        color: "#f0f0f5",
-                        fontSize: 12,
+                        color: C.text,
+                        fontSize: 14,
                         textAlign: "left",
                         boxSizing: "border-box"
                       }}
                     >
-                      <span>{f.name} <span style={{ color: "#666680" }}>· {f.unit}</span></span>
-                      <span style={{ color: "#a78bfa", fontWeight: 600, whiteSpace: "nowrap" }}>{f.calories} kcal</span>
+                      <span>{f.name} <span style={{ color: C.textFaint }}>· {f.unit}</span></span>
+                      <span style={{ color: C.accentSoft, fontWeight: 700, whiteSpace: "nowrap" }}>{f.calories} kcal</span>
                     </button>
                   ))}
                   {foodMatches.length === 0 && (
-                    <div style={{ fontSize: 12, color: "#8888aa", marginBottom: 8 }}>No match found.</div>
+                    <div style={{ fontSize: 13, color: C.textDim, marginBottom: 10 }}>No match found.</div>
                   )}
                   <button
                     onClick={() => { setCustomFoodMode(true); setCustomFoodForm({ name: foodQuery, calories: "", protein: "", carbs: "", fat: "" }); }}
-                    style={{ background: "none", border: "none", color: "#6c63ff", fontSize: 12, fontWeight: 600, cursor: "pointer", padding: 0 }}
+                    style={{ background: "none", border: "none", color: C.accentSoft, fontSize: 13, fontWeight: 600, cursor: "pointer", padding: 0 }}
                   >
                     + Add "{foodQuery}" as custom entry
                   </button>
@@ -982,30 +966,30 @@ export default function FitnessApp() {
               )}
 
               {customFoodMode && (
-                <div style={{ background: "#0d0d1a", border: "1px solid #2a2a44", borderRadius: 8, padding: 10, marginBottom: 10 }}>
+                <div style={{ background: C.inset, border: `1px solid ${C.border}`, borderRadius: RADIUS.chip, padding: 14, marginBottom: 12 }}>
                   <input
                     value={customFoodForm.name}
                     onChange={(e) => setCustomFoodForm((f) => ({ ...f, name: e.target.value }))}
                     placeholder="Food name"
-                    style={{ width: "100%", background: "#111118", border: "1px solid #2a2a44", borderRadius: 6, color: "#f0f0f5", padding: 8, fontSize: 12, marginBottom: 8, boxSizing: "border-box" }}
+                    style={{ width: "100%", background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, color: C.text, padding: 11, fontSize: 14, marginBottom: 10, boxSizing: "border-box" }}
                   />
 
-                  <div style={{ fontSize: 11, color: "#8888aa", marginBottom: 6 }}>
+                  <div style={{ fontSize: 13, color: C.textDim, marginBottom: 8 }}>
                     Don't know the calories? Pick the closest match to estimate:
                   </div>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 7, marginBottom: 12 }}>
                     {genericFoodCategories.map((cat, i) => (
                       <button
                         key={i}
                         onClick={() => applyCategoryEstimate(cat)}
                         style={{
-                          background: "#111118",
-                          border: "1px solid #2a2a44",
-                          borderRadius: 99,
-                          color: "#a78bfa",
-                          fontSize: 11,
+                          background: C.card,
+                          border: `1px solid ${C.border}`,
+                          borderRadius: RADIUS.pill,
+                          color: C.accentSoft,
+                          fontSize: 12,
                           fontWeight: 600,
-                          padding: "5px 10px",
+                          padding: "6px 12px",
                           cursor: "pointer"
                         }}
                       >
@@ -1019,9 +1003,9 @@ export default function FitnessApp() {
                     value={customFoodForm.calories}
                     onChange={(e) => setCustomFoodForm((f) => ({ ...f, calories: e.target.value }))}
                     placeholder="Calories"
-                    style={{ width: "100%", background: "#111118", border: "1px solid #2a2a44", borderRadius: 6, color: "#f0f0f5", padding: 8, fontSize: 12, marginBottom: 8, boxSizing: "border-box" }}
+                    style={{ width: "100%", background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, color: C.text, padding: 11, fontSize: 14, marginBottom: 10, boxSizing: "border-box" }}
                   />
-                  <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
+                  <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
                     {[
                       { key: "protein", placeholder: "Protein (g)" },
                       { key: "carbs", placeholder: "Carbs (g)" },
@@ -1033,20 +1017,20 @@ export default function FitnessApp() {
                         value={customFoodForm[field.key]}
                         onChange={(e) => setCustomFoodForm((f) => ({ ...f, [field.key]: e.target.value }))}
                         placeholder={field.placeholder}
-                        style={{ flex: 1, background: "#111118", border: "1px solid #2a2a44", borderRadius: 6, color: "#f0f0f5", padding: 8, fontSize: 12, boxSizing: "border-box" }}
+                        style={{ flex: 1, background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, color: C.text, padding: 11, fontSize: 13, boxSizing: "border-box" }}
                       />
                     ))}
                   </div>
-                  <div style={{ display: "flex", gap: 8 }}>
+                  <div style={{ display: "flex", gap: 10 }}>
                     <button
                       onClick={submitCustomFood}
-                      style={{ flex: 1, background: "linear-gradient(135deg, #6c63ff, #a78bfa)", border: "none", borderRadius: 6, color: "#fff", fontWeight: 700, fontSize: 12, padding: "8px 0", cursor: "pointer" }}
+                      style={{ flex: 1, background: "linear-gradient(135deg, #7c6cff, #b3a4ff)", border: "none", borderRadius: 10, color: "#fff", fontWeight: 700, fontSize: 14, padding: "11px 0", cursor: "pointer" }}
                     >
                       Add
                     </button>
                     <button
                       onClick={() => setCustomFoodMode(false)}
-                      style={{ flex: 1, background: "none", border: "1px solid #2a2a44", borderRadius: 6, color: "#8888aa", fontWeight: 700, fontSize: 12, padding: "8px 0", cursor: "pointer" }}
+                      style={{ flex: 1, background: "none", border: `1px solid ${C.border}`, borderRadius: 10, color: C.textDim, fontWeight: 700, fontSize: 14, padding: "11px 0", cursor: "pointer" }}
                     >
                       Cancel
                     </button>
@@ -1059,31 +1043,31 @@ export default function FitnessApp() {
                   {todayFoodEntries.map((e) => {
                     const qty = e.qty || 1;
                     return (
-                    <div key={e.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderTop: "1px solid #1a1a28", fontSize: 12, gap: 8 }}>
+                    <div key={e.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 0", borderTop: `1px solid ${C.border}`, fontSize: 14, gap: 10 }}>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ color: "#ccccdd" }}>{e.name}</div>
-                        {e.unit && <div style={{ color: "#666680", fontSize: 10, marginTop: 1 }}>{e.unit} each</div>}
+                        <div style={{ color: "#d4d4e0" }}>{e.name}</div>
+                        {e.unit && <div style={{ color: C.textFaint, fontSize: 12, marginTop: 2 }}>{e.unit} each</div>}
                       </div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                         <button
                           onClick={() => updateFoodQty(e.id, -1)}
-                          style={{ width: 22, height: 22, background: "#0d0d1a", border: "1px solid #2a2a44", borderRadius: 6, color: "#8888aa", cursor: "pointer", fontSize: 13, lineHeight: 1, padding: 0 }}
+                          style={{ width: 28, height: 28, background: C.inset, border: `1px solid ${C.border}`, borderRadius: 8, color: C.textDim, cursor: "pointer", fontSize: 15, lineHeight: 1, padding: 0 }}
                         >
                           −
                         </button>
-                        <span style={{ minWidth: 16, textAlign: "center", color: "#f0f0f5", fontWeight: 600 }}>{qty}</span>
+                        <span style={{ minWidth: 18, textAlign: "center", color: C.text, fontWeight: 700 }}>{qty}</span>
                         <button
                           onClick={() => updateFoodQty(e.id, 1)}
-                          style={{ width: 22, height: 22, background: "#0d0d1a", border: "1px solid #2a2a44", borderRadius: 6, color: "#8888aa", cursor: "pointer", fontSize: 13, lineHeight: 1, padding: 0 }}
+                          style={{ width: 28, height: 28, background: C.inset, border: `1px solid ${C.border}`, borderRadius: 8, color: C.textDim, cursor: "pointer", fontSize: 15, lineHeight: 1, padding: 0 }}
                         >
                           +
                         </button>
                       </div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <span style={{ color: "#a78bfa", whiteSpace: "nowrap" }}>{Math.round(e.calories * qty)} kcal</span>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        <span style={{ color: C.accentSoft, fontWeight: 600, whiteSpace: "nowrap" }}>{Math.round(e.calories * qty)} kcal</span>
                         <button
                           onClick={() => removeFoodEntry(e.id)}
-                          style={{ background: "none", border: "none", color: "#666680", cursor: "pointer", fontSize: 12, padding: 0 }}
+                          style={{ background: "none", border: "none", color: C.textFaint, cursor: "pointer", fontSize: 14, padding: 0 }}
                         >
                           ✕
                         </button>
@@ -1096,55 +1080,43 @@ export default function FitnessApp() {
             </div>
 
             {plan.nutrition.map((meal, i) => (
-              <div key={i} style={{
-                background: "#111118",
-                border: "1px solid #1e1e3a",
-                borderRadius: 14,
-                padding: 16,
-                marginBottom: 12
-              }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-                  <span style={{ fontSize: 22 }}>{meal.icon}</span>
+              <div key={i} style={CARD}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+                  <span style={{ fontSize: 24 }}>{meal.icon}</span>
                   <div>
-                    <div style={{ fontWeight: 700, fontSize: 15 }}>{meal.time}</div>
-                    <div style={{ fontSize: 12, color: "#6c63ff" }}>{meal.time_label}</div>
+                    <div style={{ fontWeight: 700, fontSize: 17 }}>{meal.time}</div>
+                    <div style={{ fontSize: 13, color: C.accentSoft, marginTop: 1 }}>{meal.time_label}</div>
                   </div>
                 </div>
                 {meal.options.map((opt, j) => (
                   <div key={j} style={{
                     display: "flex",
                     alignItems: "flex-start",
-                    gap: 8,
-                    padding: "6px 0",
-                    fontSize: 13,
-                    color: "#ccccdd",
-                    borderTop: j > 0 ? "1px solid #1a1a28" : "none"
+                    gap: 10,
+                    padding: "8px 0",
+                    fontSize: 15,
+                    color: "#d4d4e0",
+                    borderTop: j > 0 ? `1px solid ${C.border}` : "none"
                   }}>
-                    <span style={{ color: "#6c63ff", marginTop: 1 }}>◆</span>
+                    <span style={{ color: C.accentSoft, marginTop: 2 }}>◆</span>
                     {opt}
                   </div>
                 ))}
                 <div style={{
-                  marginTop: 10,
-                  padding: "7px 10px",
-                  background: "#0d0d1a",
-                  borderRadius: 8,
-                  fontSize: 12,
-                  color: "#8888aa"
+                  marginTop: 12,
+                  padding: "10px 14px",
+                  background: C.inset,
+                  borderRadius: RADIUS.chip,
+                  fontSize: 13,
+                  color: C.textDim
                 }}>
                   💬 {meal.note}
                 </div>
               </div>
             ))}
 
-            <div style={{
-              background: "#111118",
-              border: "1px solid #1e1e3a",
-              borderRadius: 14,
-              padding: 16,
-              marginBottom: 12
-            }}>
-              <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 12 }}>📊 Daily Targets</div>
+            <div style={CARD}>
+              <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 14 }}>📊 Daily Targets</div>
               {[
                 { label: "Water", value: "3 litres", icon: "💧" },
                 { label: "Treats", value: "Max 2x/week", icon: "🍦" },
@@ -1156,12 +1128,12 @@ export default function FitnessApp() {
                   display: "flex",
                   justifyContent: "space-between",
                   alignItems: "center",
-                  padding: "8px 0",
-                  fontSize: 13,
-                  borderTop: i > 0 ? "1px solid #1a1a28" : "none"
+                  padding: "10px 0",
+                  fontSize: 14,
+                  borderTop: i > 0 ? `1px solid ${C.border}` : "none"
                 }}>
-                  <span style={{ color: "#aaaacc" }}>{item.icon} {item.label}</span>
-                  <span style={{ color: "#a78bfa", fontWeight: 600 }}>{item.value}</span>
+                  <span style={{ color: "#b8b8cc" }}>{item.icon} {item.label}</span>
+                  <span style={{ color: C.accentSoft, fontWeight: 700 }}>{item.value}</span>
                 </div>
               ))}
             </div>
@@ -1170,19 +1142,13 @@ export default function FitnessApp() {
 
         {activeTab === "schedule" && (
           <div>
-            <div style={{
-              background: "#111118",
-              border: "1px solid #1e1e3a",
-              borderRadius: 14,
-              padding: 16,
-              marginBottom: 12
-            }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-                <div style={{ fontWeight: 700, fontSize: 14 }}>📅 Your Week</div>
+            <div style={CARD}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                <div style={{ fontWeight: 700, fontSize: 17 }}>📅 Your Week</div>
                 {!editingSchedule && (
                   <button
                     onClick={startEditingSchedule}
-                    style={{ background: "none", border: "none", color: "#6c63ff", fontSize: 12, fontWeight: 600, cursor: "pointer", padding: 0 }}
+                    style={{ background: "rgba(124,108,255,0.1)", border: "none", color: C.accentSoft, fontSize: 13, fontWeight: 600, cursor: "pointer", padding: "7px 12px", borderRadius: RADIUS.chip }}
                   >
                     ✏️ Edit Days
                   </button>
@@ -1191,10 +1157,10 @@ export default function FitnessApp() {
 
               {editingSchedule ? (
                 <div>
-                  <div style={{ fontSize: 12, color: "#8888aa", marginBottom: 10 }}>
+                  <div style={{ fontSize: 13, color: C.textDim, marginBottom: 12 }}>
                     Select {profile.daysPerWeek} training days ({draftDays.length}/{profile.daysPerWeek} selected)
                   </div>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 6, marginBottom: 14 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 7, marginBottom: 16 }}>
                     {WEEKDAY_NAMES.map((wd, i) => {
                       const selected = draftDays.includes(i);
                       return (
@@ -1203,12 +1169,12 @@ export default function FitnessApp() {
                           onClick={() => toggleDraftDay(i)}
                           style={{
                             textAlign: "center",
-                            padding: "12px 4px",
-                            borderRadius: 10,
-                            background: selected ? "linear-gradient(135deg, #6c63ff, #a78bfa)" : "#0d0d1a",
-                            border: selected ? "1px solid #6c63ff" : "1px solid #1a1a28",
-                            color: selected ? "#fff" : "#666680",
-                            fontSize: 11,
+                            padding: "14px 4px",
+                            borderRadius: RADIUS.chip,
+                            background: selected ? "linear-gradient(135deg, #7c6cff, #b3a4ff)" : C.inset,
+                            border: selected ? `1px solid ${C.accent}` : `1px solid ${C.border}`,
+                            color: selected ? "#fff" : C.textDim,
+                            fontSize: 13,
                             fontWeight: 700,
                             cursor: "pointer"
                           }}
@@ -1218,19 +1184,19 @@ export default function FitnessApp() {
                       );
                     })}
                   </div>
-                  <div style={{ display: "flex", gap: 8 }}>
+                  <div style={{ display: "flex", gap: 10 }}>
                     <button
                       onClick={saveSchedule}
                       disabled={draftDays.length !== profile.daysPerWeek}
                       style={{
                         flex: 1,
-                        background: draftDays.length === profile.daysPerWeek ? "linear-gradient(135deg, #6c63ff, #a78bfa)" : "#1e1e3a",
+                        background: draftDays.length === profile.daysPerWeek ? "linear-gradient(135deg, #7c6cff, #b3a4ff)" : "rgba(255,255,255,0.06)",
                         border: "none",
-                        borderRadius: 8,
-                        color: draftDays.length === profile.daysPerWeek ? "#fff" : "#666680",
+                        borderRadius: RADIUS.chip,
+                        color: draftDays.length === profile.daysPerWeek ? "#fff" : C.textFaint,
                         fontWeight: 700,
-                        fontSize: 13,
-                        padding: "10px 0",
+                        fontSize: 15,
+                        padding: "13px 0",
                         cursor: draftDays.length === profile.daysPerWeek ? "pointer" : "default"
                       }}
                     >
@@ -1238,30 +1204,30 @@ export default function FitnessApp() {
                     </button>
                     <button
                       onClick={() => setEditingSchedule(false)}
-                      style={{ flex: 1, background: "none", border: "1px solid #2a2a44", borderRadius: 8, color: "#8888aa", fontWeight: 700, fontSize: 13, padding: "10px 0", cursor: "pointer" }}
+                      style={{ flex: 1, background: "none", border: `1px solid ${C.border}`, borderRadius: RADIUS.chip, color: C.textDim, fontWeight: 700, fontSize: 15, padding: "13px 0", cursor: "pointer" }}
                     >
                       Cancel
                     </button>
                   </div>
                 </div>
               ) : (
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 6 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 7 }}>
                   {plan.weekSchedule.map((d, i) => (
                     <button
                       key={i}
                       onClick={() => d.trainingDayId && setSelectedDayId(d.trainingDayId)}
                       style={{
                         textAlign: "center",
-                        padding: "10px 4px",
-                        borderRadius: 10,
-                        background: d.active ? "linear-gradient(135deg, #1a1535, #2a1f55)" : "#0d0d1a",
-                        border: d.active ? "1px solid #6c63ff" : "1px solid #1a1a28",
+                        padding: "12px 4px",
+                        borderRadius: RADIUS.chip,
+                        background: d.active ? "rgba(124,108,255,0.16)" : C.inset,
+                        border: d.active ? `1px solid ${C.accent}` : `1px solid ${C.border}`,
                         cursor: d.trainingDayId ? "pointer" : "default"
                       }}
                     >
-                      <div style={{ fontSize: 16, marginBottom: 4 }}>{d.icon}</div>
-                      <div style={{ fontSize: 10, fontWeight: 700, color: d.active ? "#a78bfa" : "#666680" }}>{d.day} {d.dateNum}</div>
-                      <div style={{ fontSize: 9, color: d.active ? "#8877dd" : "#444460", marginTop: 2 }}>{d.label}</div>
+                      <div style={{ fontSize: 17, marginBottom: 5 }}>{d.icon}</div>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: d.active ? C.accentSoft : C.textDim }}>{d.day} {d.dateNum}</div>
+                      <div style={{ fontSize: 11, color: d.active ? "#9d8fe0" : C.textFaint, marginTop: 3 }}>{d.label}</div>
                     </button>
                   ))}
                 </div>
@@ -1278,45 +1244,84 @@ export default function FitnessApp() {
       {restTimer && (
         <div style={{
           position: "fixed",
-          bottom: 0,
+          bottom: TAB_BAR_HEIGHT,
           left: "50%",
           transform: "translateX(-50%)",
           width: "100%",
           maxWidth: 420,
-          background: "linear-gradient(135deg, #1a1a2e, #16213e)",
-          borderTop: "1px solid #6c63ff",
-          padding: "14px 20px",
+          background: "linear-gradient(135deg, #201c3d, #171a30)",
+          borderTop: `1px solid ${C.accent}`,
+          padding: "16px 20px",
           boxSizing: "border-box",
-          zIndex: 20,
-          boxShadow: "0 -4px 20px rgba(0,0,0,0.4)"
+          zIndex: 25,
+          boxShadow: "0 -8px 24px rgba(0,0,0,0.4)"
         }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-            <div style={{ fontSize: 12, color: "#a78bfa", fontWeight: 700 }}>😮‍💨 Resting — {restTimer.exName}</div>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+            <div style={{ fontSize: 13, color: C.accentSoft, fontWeight: 700 }}>😮‍💨 Resting — {restTimer.exName}</div>
             <button
               onClick={() => setRestTimer(null)}
-              style={{ background: "none", border: "none", color: "#666680", fontSize: 11, cursor: "pointer", fontWeight: 700 }}
+              style={{ background: "none", border: "none", color: C.textFaint, fontSize: 12, cursor: "pointer", fontWeight: 700 }}
             >
               Skip ✕
             </button>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <div style={{ fontSize: 22, fontWeight: 700, color: "#fff", minWidth: 64 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+            <div style={{ fontSize: 26, fontWeight: 800, color: "#fff", minWidth: 72 }}>
               {restTimer.secondsLeft > 0
                 ? `${Math.floor(restTimer.secondsLeft / 60)}:${String(restTimer.secondsLeft % 60).padStart(2, "0")}`
                 : "Go! 💪"}
             </div>
-            <div style={{ flex: 1, background: "#1e1e3a", borderRadius: 99, height: 8 }}>
+            <div style={{ flex: 1, background: "rgba(255,255,255,0.08)", borderRadius: RADIUS.pill, height: 10 }}>
               <div style={{
-                background: "linear-gradient(90deg, #6c63ff, #a78bfa)",
+                background: "linear-gradient(90deg, #7c6cff, #b3a4ff)",
                 width: `${(restTimer.secondsLeft / restTimer.total) * 100}%`,
                 height: "100%",
-                borderRadius: 99,
+                borderRadius: RADIUS.pill,
                 transition: "width 1s linear"
               }} />
             </div>
           </div>
         </div>
       )}
+
+      <div style={{
+        position: "fixed",
+        bottom: 0,
+        left: "50%",
+        transform: "translateX(-50%)",
+        width: "100%",
+        maxWidth: 420,
+        display: "flex",
+        background: "rgba(19,19,28,0.94)",
+        backdropFilter: "blur(20px)",
+        WebkitBackdropFilter: "blur(20px)",
+        borderTop: `1px solid ${C.border}`,
+        paddingBottom: "env(safe-area-inset-bottom, 0px)",
+        zIndex: 30
+      }}>
+        {tabs.map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            style={{
+              flex: 1,
+              padding: "12px 4px 10px",
+              border: "none",
+              background: "none",
+              color: activeTab === tab.id ? C.accentSoft : C.textFaint,
+              cursor: "pointer",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 4,
+              transition: "color 0.2s"
+            }}
+          >
+            <div style={{ fontSize: 23 }}>{tab.icon}</div>
+            <div style={{ fontSize: 11, fontWeight: activeTab === tab.id ? 700 : 500 }}>{tab.label}</div>
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
@@ -1358,22 +1363,24 @@ function ProgressTab({ history }) {
   if (totalWorkouts === 0) {
     return (
       <div style={{
-        background: "#111118",
-        border: "1px solid #1e1e3a",
-        borderRadius: 14,
-        padding: 24,
+        background: C.card,
+        border: `1px solid ${C.border}`,
+        borderRadius: RADIUS.card,
+        padding: 32,
         textAlign: "center",
-        color: "#8888aa",
-        fontSize: 13
+        color: C.textDim,
+        fontSize: 15,
+        lineHeight: 1.6
       }}>
-        📈 No workouts logged yet.<br />Finish a workout and it'll show up here.
+        <div style={{ fontSize: 32, marginBottom: 10 }}>📈</div>
+        No workouts logged yet.<br />Finish a workout and it'll show up here.
       </div>
     );
   }
 
   return (
     <div>
-      <div style={{ display: "flex", gap: 10, marginBottom: 12 }}>
+      <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
         {[
           { label: "Workouts logged", value: totalWorkouts },
           { label: "Workouts (7 days)", value: workoutsLast7Days },
@@ -1381,66 +1388,54 @@ function ProgressTab({ history }) {
         ].map((stat, i) => (
           <div key={i} style={{
             flex: 1,
-            background: "#111118",
-            border: "1px solid #1e1e3a",
-            borderRadius: 14,
-            padding: "14px 10px",
+            background: C.card,
+            border: `1px solid ${C.border}`,
+            borderRadius: RADIUS.card,
+            padding: "18px 8px",
             textAlign: "center"
           }}>
-            <div style={{ fontSize: 20, fontWeight: 700, color: "#a78bfa" }}>{stat.value}</div>
-            <div style={{ fontSize: 10, color: "#8888aa", marginTop: 4 }}>{stat.label}</div>
+            <div style={{ fontSize: 24, fontWeight: 800, color: C.accentSoft }}>{stat.value}</div>
+            <div style={{ fontSize: 11, color: C.textDim, marginTop: 6, lineHeight: 1.3 }}>{stat.label}</div>
           </div>
         ))}
       </div>
 
       {personalBests.length > 0 && (
-        <div style={{
-          background: "#111118",
-          border: "1px solid #1e1e3a",
-          borderRadius: 14,
-          padding: 16,
-          marginBottom: 12
-        }}>
-          <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 12 }}>🏆 Personal Bests</div>
+        <div style={CARD}>
+          <div style={{ fontWeight: 700, fontSize: 17, marginBottom: 14 }}>🏆 Personal Bests</div>
           {personalBests.map((pb, i) => (
             <div key={i} style={{
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
-              padding: "8px 0",
-              fontSize: 13,
-              borderTop: i > 0 ? "1px solid #1a1a28" : "none"
+              padding: "10px 0",
+              fontSize: 15,
+              borderTop: i > 0 ? `1px solid ${C.border}` : "none"
             }}>
-              <span style={{ color: "#ccccdd" }}>{pb.name}</span>
-              <span style={{ color: "#4ade80", fontWeight: 700 }}>{pb.label}</span>
+              <span style={{ color: "#d4d4e0" }}>{pb.name}</span>
+              <span style={{ color: C.successBright, fontWeight: 700 }}>{pb.label}</span>
             </div>
           ))}
         </div>
       )}
 
-      <div style={{
-        background: "#111118",
-        border: "1px solid #1e1e3a",
-        borderRadius: 14,
-        padding: 16,
-        marginBottom: 12
-      }}>
-        <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 12 }}>📜 Recent Workouts</div>
+      <div style={CARD}>
+        <div style={{ fontWeight: 700, fontSize: 17, marginBottom: 14 }}>📜 Recent Workouts</div>
         {sorted.slice(0, 20).map((entry, i) => {
           const setsDone = entry.exercises.reduce((a, ex) => a + ex.setsCompleted, 0);
           const setsTotal = entry.exercises.reduce((a, ex) => a + ex.totalSets, 0);
           return (
             <div key={entry.key} style={{
-              padding: "10px 0",
-              borderTop: i > 0 ? "1px solid #1a1a28" : "none"
+              padding: "12px 0",
+              borderTop: i > 0 ? `1px solid ${C.border}` : "none"
             }}>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 15 }}>
                 <span style={{ fontWeight: 700 }}>{entry.dayLabel}</span>
-                <span style={{ color: "#8888aa" }}>
+                <span style={{ color: C.textDim }}>
                   {new Date(entry.completedAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
                 </span>
               </div>
-              <div style={{ fontSize: 11, color: "#8888aa", marginTop: 2 }}>
+              <div style={{ fontSize: 13, color: C.textDim, marginTop: 4 }}>
                 {setsDone}/{setsTotal} sets · {entry.exercises.map((ex) => ex.name).join(", ")}
               </div>
             </div>
