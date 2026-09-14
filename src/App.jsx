@@ -145,12 +145,13 @@ export default function FitnessApp() {
                 whiteSpace: "nowrap"
               }}
             >
-              {d.label}
+              {d.dateLabel}
             </button>
           ))}
         </div>
 
         <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: -0.5, marginTop: 14 }}>{workout.label}</div>
+        <div style={{ fontSize: 12, color: "#8888aa", marginTop: 2 }}>{workout.dateLabel}</div>
 
         <div style={{ marginTop: 16 }}>
           <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#8888aa", marginBottom: 6 }}>
@@ -246,6 +247,11 @@ export default function FitnessApp() {
                       <div style={{ fontSize: 12, color: "#8888aa", marginTop: 2 }}>
                         {ex.sets} sets · {ex.reps} · {ex.rest}
                       </div>
+                      {ex.weight && (
+                        <div style={{ fontSize: 12, color: "#a78bfa", marginTop: 2, fontWeight: 600 }}>
+                          🏋️ Suggested: {ex.weight}
+                        </div>
+                      )}
                     </div>
                     <button
                       onClick={() => toggleVideo(exUid)}
@@ -559,7 +565,7 @@ export default function FitnessApp() {
                     }}
                   >
                     <div style={{ fontSize: 16, marginBottom: 4 }}>{d.icon}</div>
-                    <div style={{ fontSize: 10, fontWeight: 700, color: d.active ? "#a78bfa" : "#666680" }}>{d.day}</div>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: d.active ? "#a78bfa" : "#666680" }}>{d.day} {d.dateNum}</div>
                     <div style={{ fontSize: 9, color: d.active ? "#8877dd" : "#444460", marginTop: 2 }}>{d.label}</div>
                   </button>
                 ))}

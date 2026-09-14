@@ -25,7 +25,12 @@ export const exerciseLibrary = {
       cue: "Lie flat, press dumbbells up over chest, control the descent",
       tip: "Don't let your elbows flare past 90°.",
       videoId: "kgr3lCKx6_M",
-      emoji: "🏋️"
+      emoji: "🏋️",
+      suggestedWeight: {
+        beginner: "6–8 kg each hand",
+        intermediate: "10–14 kg each hand",
+        advanced: "16–22 kg each hand"
+      }
     },
     {
       id: "shoulder-press",
@@ -35,7 +40,12 @@ export const exerciseLibrary = {
       cue: "Press dumbbells overhead, keep core tight, don't lean back",
       tip: "Exhale on the push, don't arch your lower back.",
       videoId: "1jYq9QQEWqE",
-      emoji: "💪"
+      emoji: "💪",
+      suggestedWeight: {
+        beginner: "4–6 kg each hand",
+        intermediate: "8–10 kg each hand",
+        advanced: "12–16 kg each hand"
+      }
     },
     {
       id: "barbell-bench-press",
@@ -45,7 +55,12 @@ export const exerciseLibrary = {
       cue: "Grip slightly wider than shoulders, lower bar to chest, press up",
       tip: "Keep feet planted, don't bounce the bar off your chest.",
       videoId: "Pp8rHcFVIYg",
-      emoji: "🏋️"
+      emoji: "🏋️",
+      suggestedWeight: {
+        beginner: "Empty bar (20 kg)",
+        intermediate: "40–50 kg total",
+        advanced: "60–80 kg total"
+      }
     }
   ],
   pull: [
@@ -57,7 +72,12 @@ export const exerciseLibrary = {
       cue: "One knee on bench, pull elbow up toward ceiling, squeeze your back",
       tip: "Don't twist your body. Keep it slow and controlled.",
       videoId: "fURsHPHgssI",
-      emoji: "💪"
+      emoji: "💪",
+      suggestedWeight: {
+        beginner: "6–8 kg",
+        intermediate: "10–14 kg",
+        advanced: "16–22 kg"
+      }
     },
     {
       id: "bodyweight-row",
@@ -77,7 +97,12 @@ export const exerciseLibrary = {
       cue: "Grip wide, lean back slightly, pull bar to upper chest, squeeze shoulder blades",
       tip: "Don't let the cable yank you back up. Control the return.",
       videoId: "Z_3xHwuO8Tk",
-      emoji: "🎯"
+      emoji: "🎯",
+      suggestedWeight: {
+        beginner: "15–20 kg",
+        intermediate: "25–35 kg",
+        advanced: "40–55 kg"
+      }
     },
     {
       id: "bent-over-row",
@@ -87,7 +112,12 @@ export const exerciseLibrary = {
       cue: "Hinge at hips, flat back, pull bar to lower ribs",
       tip: "Don't round your lower back — hinge, don't hunch.",
       videoId: "Lf4LUL3FeUM",
-      emoji: "🏋️"
+      emoji: "🏋️",
+      suggestedWeight: {
+        beginner: "Empty bar (20 kg)",
+        intermediate: "35–45 kg total",
+        advanced: "50–70 kg total"
+      }
     }
   ],
   legs: [
@@ -97,9 +127,14 @@ export const exerciseLibrary = {
       equipment: ["dumbbell", "gym"],
       reps: "12 reps",
       cue: "Hold dumbbell at chest, sit back like a chair, push through heels",
-      tip: "Start with 5–8kg. Light is right today.",
+      tip: "Keep your weight on your heels and chest tall.",
       videoId: "k_EhLGvM8TQ",
-      emoji: "🏋️"
+      emoji: "🏋️",
+      suggestedWeight: {
+        beginner: "6–10 kg",
+        intermediate: "12–16 kg",
+        advanced: "18–24 kg"
+      }
     },
     {
       id: "bodyweight-squat",
@@ -129,7 +164,12 @@ export const exerciseLibrary = {
       cue: "Feet shoulder-width on platform, lower with control, press through heels",
       tip: "Don't lock your knees out hard at the top.",
       videoId: "8nm863C0c60",
-      emoji: "🦿"
+      emoji: "🦿",
+      suggestedWeight: {
+        beginner: "20–40 kg (plus sled)",
+        intermediate: "60–90 kg (plus sled)",
+        advanced: "100–140 kg (plus sled)"
+      }
     }
   ],
   core: [

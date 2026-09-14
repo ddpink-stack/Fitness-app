@@ -41,6 +41,19 @@ const trainingDayIndexes = {
   5: [0, 1, 2, 3, 4] // Mon–Fri
 };
 
+function startOfWeekMonday(date) {
+  const d = new Date(date);
+  const day = d.getDay(); // 0 = Sun … 6 = Sat
+  const diffToMonday = day === 0 ? -6 : 1 - day;
+  d.setDate(d.getDate() + diffToMonday);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+function formatDayLabel(date) {
+  return date.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" });
+}
+
 function pickExercise(category, dayIndex, slotIndex, available, used) {
   const pool = exerciseLibrary[category].filter(
     (ex) => ex.equipment.some((e) => available.includes(e)) && !used.has(ex.id)
@@ -52,24 +65,32 @@ function pickExercise(category, dayIndex, slotIndex, available, used) {
   return chosen;
 }
 
-export function generateWeekPlan(profile) {
+export function generateWeekPlan(profile, referenceDate = new Date()) {
   const { daysPerWeek, equipment, level, goal, diet } = profile;
   const template = splitTemplates[daysPerWeek] ?? splitTemplates[3];
   const available = availableEquipment(equipment);
   const sets = setsByLevel[level] ?? 3;
   const rest = restByLevel[level] ?? "60 sec rest";
   const cardioMinutes = cardioMinutesByGoal[goal] ?? 20;
+  const monday = startOfWeekMonday(referenceDate);
+  const trainIdx = trainingDayIndexes[daysPerWeek] ?? trainingDayIndexes[3];
 
   const trainingDays = template.map((dayTemplate, dayIndex) => {
     const used = new Set();
     const exercises = dayTemplate.categories.map((category, slotIndex) => {
       const picked = pickExercise(category, dayIndex, slotIndex, available, used);
-      return { ...picked, sets, rest };
+      const weight = picked.suggestedWeight ? picked.suggestedWeight[level] ?? null : null;
+      return { ...picked, sets, rest, weight };
     });
+
+    const date = new Date(monday);
+    date.setDate(date.getDate() + trainIdx[dayIndex]);
 
     return {
       id: `day-${dayIndex}`,
       label: dayTemplate.label,
+      date: date.toISOString(),
+      dateLabel: formatDayLabel(date),
       exercises,
       cardio: {
         duration: `${cardioMinutes} min`,
@@ -83,14 +104,29 @@ export function generateWeekPlan(profile) {
   });
 
   const slots = weekdaySlots[daysPerWeek] ?? weekdaySlots[3];
-  const trainIdx = trainingDayIndexes[daysPerWeek] ?? trainingDayIndexes[3];
   const weekSchedule = slots.map((weekday, i) => {
+    const date = new Date(monday);
+    date.setDate(date.getDate() + i);
     const trainingSlot = trainIdx.indexOf(i);
     if (trainingSlot !== -1) {
-      return { day: weekday, label: trainingDays[trainingSlot].label, active: true, icon: "🏋️", trainingDayId: trainingDays[trainingSlot].id };
+      return {
+        day: weekday,
+        dateNum: date.getDate(),
+        label: trainingDays[trainingSlot].label,
+        active: true,
+        icon: "🏋️",
+        trainingDayId: trainingDays[trainingSlot].id
+      };
     }
     const isWeekend = weekday === "Sat" || weekday === "Sun";
-    return { day: weekday, label: isWeekend ? "Rest" : "Walk", active: false, icon: isWeekend ? "😴" : "🚶", trainingDayId: null };
+    return {
+      day: weekday,
+      dateNum: date.getDate(),
+      label: isWeekend ? "Rest" : "Walk",
+      active: false,
+      icon: isWeekend ? "😴" : "🚶",
+      trainingDayId: null
+    };
   });
 
   return {
