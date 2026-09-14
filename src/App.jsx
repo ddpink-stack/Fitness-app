@@ -1,9 +1,17 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Questionnaire from "./components/Questionnaire.jsx";
-import { generateWeekPlan } from "./lib/planGenerator.js";
+import { generateWeekPlan, computeWeightsBySet, getSwapPool } from "./lib/planGenerator.js";
+import { availableEquipment } from "./data/exercises.js";
 
 const PROFILE_KEY = "fitness-app:profile";
 const PROGRESS_KEY = "fitness-app:progress";
+const HISTORY_KEY = "fitness-app:history";
+const SWAPS_KEY = "fitness-app:swaps";
+
+function parseRestSeconds(restLabel) {
+  const match = /(\d+)/.exec(restLabel || "");
+  return match ? parseInt(match[1], 10) : 60;
+}
 
 function loadJSON(key, fallback) {
   try {
@@ -25,11 +33,15 @@ function saveJSON(key, value) {
 export default function FitnessApp() {
   const [profile, setProfile] = useState(() => loadJSON(PROFILE_KEY, null));
   const [progress, setProgress] = useState(() => loadJSON(PROGRESS_KEY, {}));
+  const [history, setHistory] = useState(() => loadJSON(HISTORY_KEY, []));
+  const [swaps, setSwaps] = useState(() => loadJSON(SWAPS_KEY, {}));
   const [activeTab, setActiveTab] = useState("workout");
   const [selectedDayId, setSelectedDayId] = useState(null);
   const [showTip, setShowTip] = useState({});
   const [showVideo, setShowVideo] = useState({});
   const [savedNote, setSavedNote] = useState(false);
+  const [restTimer, setRestTimer] = useState(null); // { exUid, exName, total, secondsLeft }
+  const importInputRef = useRef(null);
 
   const plan = useMemo(() => (profile ? generateWeekPlan(profile) : null), [profile]);
 
@@ -42,6 +54,94 @@ export default function FitnessApp() {
   useEffect(() => {
     saveJSON(PROGRESS_KEY, progress);
   }, [progress]);
+
+  useEffect(() => {
+    saveJSON(HISTORY_KEY, history);
+  }, [history]);
+
+  useEffect(() => {
+    saveJSON(SWAPS_KEY, swaps);
+  }, [swaps]);
+
+  useEffect(() => {
+    if (!restTimer) return;
+    if (restTimer.secondsLeft > 0) {
+      const id = setTimeout(() => {
+        setRestTimer((current) => (current ? { ...current, secondsLeft: current.secondsLeft - 1 } : current));
+      }, 1000);
+      return () => clearTimeout(id);
+    }
+    const id = setTimeout(() => setRestTimer(null), 3000);
+    return () => clearTimeout(id);
+  }, [restTimer]);
+
+  const workout = useMemo(() => {
+    if (!plan) return null;
+    return plan.trainingDays.find((d) => d.id === selectedDayId) ?? plan.trainingDays[0];
+  }, [plan, selectedDayId]);
+
+  const dayProgress = useMemo(() => {
+    if (!workout) return { completedSets: {}, notes: "" };
+    return progress[workout.id] ?? { completedSets: {}, notes: "" };
+  }, [workout, progress]);
+
+  // Applies any exercise swaps the user made for this day on top of the
+  // generated plan, recomputing personalized weights for the swapped-in move.
+  const displayedWorkout = useMemo(() => {
+    if (!workout || !profile) return workout;
+    const daySwaps = swaps[workout.id] || {};
+    if (Object.keys(daySwaps).length === 0) return workout;
+    const available = availableEquipment(profile.equipment);
+    return {
+      ...workout,
+      exercises: workout.exercises.map((ex, i) => {
+        const rotation = daySwaps[i] || 0;
+        if (rotation === 0) return ex;
+        const pool = getSwapPool(ex.category, available);
+        if (pool.length <= 1) return ex;
+        const baseIdx = pool.findIndex((p) => p.id === ex.id);
+        const alt = pool[(baseIdx + rotation) % pool.length];
+        if (!alt || alt.id === ex.id) return ex;
+        const weightsBySet = computeWeightsBySet(alt, ex.category, profile.level, ex.sets, profile);
+        return { ...alt, sets: ex.sets, rest: ex.rest, category: ex.category, weightsBySet };
+      })
+    };
+  }, [workout, swaps, profile]);
+
+  const totalSets = useMemo(
+    () => (displayedWorkout ? displayedWorkout.exercises.reduce((acc, ex) => acc + ex.sets, 0) : 0),
+    [displayedWorkout]
+  );
+  const doneSets = useMemo(
+    () => Object.values(dayProgress.completedSets).filter(Boolean).length,
+    [dayProgress]
+  );
+  const progressPct = totalSets ? Math.round((doneSets / totalSets) * 100) : 0;
+
+  // Logs a completed workout to history once every set is done, upserting
+  // by day+date so revisiting an already-finished day doesn't duplicate it.
+  useEffect(() => {
+    if (!displayedWorkout || totalSets === 0 || progressPct !== 100) return;
+    const todayKey = new Date().toISOString().slice(0, 10);
+    const entryKey = `${displayedWorkout.id}::${todayKey}`;
+    const entry = {
+      key: entryKey,
+      completedAt: new Date().toISOString(),
+      dayId: displayedWorkout.id,
+      dayLabel: displayedWorkout.label,
+      exercises: displayedWorkout.exercises.map((ex, exIndex) => {
+        const exUid = `${displayedWorkout.id}-${ex.id}-${exIndex}`;
+        const doneCount = Array.from({ length: ex.sets }, (_, i) => dayProgress.completedSets[`${exUid}-${i + 1}`])
+          .filter(Boolean).length;
+        return { id: ex.id, name: ex.name, weightsUsed: ex.weightsBySet ?? null, setsCompleted: doneCount, totalSets: ex.sets };
+      })
+    };
+    setHistory((prev) => {
+      const idx = prev.findIndex((h) => h.key === entryKey);
+      if (idx !== -1 && JSON.stringify(prev[idx]) === JSON.stringify(entry)) return prev;
+      return idx === -1 ? [...prev, entry] : prev.map((h, i) => (i === idx ? entry : h));
+    });
+  }, [progressPct, displayedWorkout, dayProgress, totalSets]);
 
   if (!profile || !plan) {
     return (
@@ -57,13 +157,62 @@ export default function FitnessApp() {
   const retakeQuestionnaire = () => {
     localStorage.removeItem(PROFILE_KEY);
     localStorage.removeItem(PROGRESS_KEY);
+    localStorage.removeItem(SWAPS_KEY);
     setProfile(null);
     setProgress({});
+    setSwaps({});
     setSelectedDayId(null);
+    setRestTimer(null);
   };
 
-  const workout = plan.trainingDays.find((d) => d.id === selectedDayId) ?? plan.trainingDays[0];
-  const dayProgress = progress[workout.id] ?? { completedSets: {}, notes: "" };
+  const exportBackup = () => {
+    const payload = { exportedAt: new Date().toISOString(), profile, progress, history, swaps };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `fitness-app-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  };
+
+  const importBackup = (file) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = JSON.parse(e.target.result);
+        if (data.profile) {
+          saveJSON(PROFILE_KEY, data.profile);
+          setProfile(data.profile);
+        }
+        if (data.progress) {
+          saveJSON(PROGRESS_KEY, data.progress);
+          setProgress(data.progress);
+        }
+        if (data.history) {
+          saveJSON(HISTORY_KEY, data.history);
+          setHistory(data.history);
+        }
+        if (data.swaps) {
+          saveJSON(SWAPS_KEY, data.swaps);
+          setSwaps(data.swaps);
+        }
+      } catch {
+        window.alert("That file doesn't look like a valid backup.");
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  const swapExercise = (exIndex) => {
+    setSwaps((prev) => {
+      const dayKey = workout.id;
+      const current = prev[dayKey] || {};
+      return { ...prev, [dayKey]: { ...current, [exIndex]: (current[exIndex] || 0) + 1 } };
+    });
+  };
 
   const setDayProgress = (updater) => {
     setProgress((prev) => {
@@ -73,12 +222,21 @@ export default function FitnessApp() {
     setSavedNote(false);
   };
 
-  const toggleSet = (exerciseId, setNum) => {
+  const startRestTimer = (exUid, exName, restLabel) => {
+    const total = parseRestSeconds(restLabel);
+    setRestTimer({ exUid, exName, total, secondsLeft: total });
+  };
+
+  const toggleSet = (exerciseId, setNum, exName, restLabel, isLastSet) => {
     const key = `${exerciseId}-${setNum}`;
+    const wasDone = dayProgress.completedSets[key];
     setDayProgress((current) => ({
       ...current,
       completedSets: { ...current.completedSets, [key]: !current.completedSets[key] }
     }));
+    if (!wasDone && !isLastSet) {
+      startRestTimer(exerciseId, exName, restLabel);
+    }
   };
 
   const completeAllSets = (exerciseId, count) => {
@@ -92,12 +250,13 @@ export default function FitnessApp() {
   const finishWorkout = () => {
     setDayProgress((current) => {
       const completedSets = { ...current.completedSets };
-      workout.exercises.forEach((ex, exIndex) => {
+      displayedWorkout.exercises.forEach((ex, exIndex) => {
         const exUid = `${workout.id}-${ex.id}-${exIndex}`;
         for (let i = 1; i <= ex.sets; i++) completedSets[`${exUid}-${i}`] = true;
       });
       return { ...current, completedSets };
     });
+    setRestTimer(null);
   };
 
   const toggleTip = (id) => {
@@ -108,14 +267,11 @@ export default function FitnessApp() {
     setShowVideo((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
-  const totalSets = workout.exercises.reduce((acc, ex) => acc + ex.sets, 0);
-  const doneSets = Object.values(dayProgress.completedSets).filter(Boolean).length;
-  const progressPct = Math.round((doneSets / totalSets) * 100) || 0;
-
   const tabs = [
     { id: "workout", label: "Workout", icon: "🏋️" },
     { id: "nutrition", label: "Nutrition", icon: "🍽️" },
-    { id: "schedule", label: "Schedule", icon: "📅" }
+    { id: "schedule", label: "Schedule", icon: "📅" },
+    { id: "progress", label: "Progress", icon: "📈" }
   ];
 
   return (
@@ -138,12 +294,37 @@ export default function FitnessApp() {
           <div style={{ fontSize: 11, color: "#6c63ff", letterSpacing: 2, textTransform: "uppercase" }}>
             Your Plan
           </div>
-          <button
-            onClick={retakeQuestionnaire}
-            style={{ background: "none", border: "none", color: "#666680", fontSize: 11, cursor: "pointer", padding: 0 }}
-          >
-            Retake questionnaire
-          </button>
+          <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+            <button
+              onClick={exportBackup}
+              style={{ background: "none", border: "none", color: "#666680", fontSize: 11, cursor: "pointer", padding: 0 }}
+            >
+              ⬇ Export
+            </button>
+            <button
+              onClick={() => importInputRef.current?.click()}
+              style={{ background: "none", border: "none", color: "#666680", fontSize: 11, cursor: "pointer", padding: 0 }}
+            >
+              ⬆ Import
+            </button>
+            <input
+              ref={importInputRef}
+              type="file"
+              accept="application/json"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) importBackup(file);
+                e.target.value = "";
+              }}
+              style={{ display: "none" }}
+            />
+            <button
+              onClick={retakeQuestionnaire}
+              style={{ background: "none", border: "none", color: "#666680", fontSize: 11, cursor: "pointer", padding: 0 }}
+            >
+              Retake questionnaire
+            </button>
+          </div>
         </div>
 
         <div style={{ display: "flex", gap: 6, overflowX: "auto", marginTop: 10, paddingBottom: 2 }}>
@@ -242,7 +423,7 @@ export default function FitnessApp() {
               ))}
             </div>
 
-            {workout.exercises.map((ex, exIndex) => {
+            {displayedWorkout.exercises.map((ex, exIndex) => {
               const exUid = `${workout.id}-${ex.id}-${exIndex}`;
               const allSetsForEx = Array.from({ length: ex.sets }, (_, i) => `${exUid}-${i + 1}`);
               const doneCount = allSetsForEx.filter(k => dayProgress.completedSets[k]).length;
@@ -272,25 +453,45 @@ export default function FitnessApp() {
                         </div>
                       )}
                     </div>
-                    <button
-                      onClick={() => toggleVideo(exUid)}
-                      style={{
-                        background: "#1a0000",
-                        border: "1px solid #3a0000",
-                        color: "#ff4444",
-                        borderRadius: 8,
-                        padding: "5px 10px",
-                        fontSize: 11,
-                        fontWeight: 700,
-                        cursor: "pointer",
-                        whiteSpace: "nowrap",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 4
-                      }}
-                    >
-                      {showVideo[exUid] ? "▲ Hide" : "▶ Video"}
-                    </button>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "flex-end" }}>
+                      <button
+                        onClick={() => toggleVideo(exUid)}
+                        style={{
+                          background: "#1a0000",
+                          border: "1px solid #3a0000",
+                          color: "#ff4444",
+                          borderRadius: 8,
+                          padding: "5px 10px",
+                          fontSize: 11,
+                          fontWeight: 700,
+                          cursor: "pointer",
+                          whiteSpace: "nowrap",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 4
+                        }}
+                      >
+                        {showVideo[exUid] ? "▲ Hide" : "▶ Video"}
+                      </button>
+                      {!exDone && doneCount === 0 && (
+                        <button
+                          onClick={() => swapExercise(exIndex)}
+                          style={{
+                            background: "none",
+                            border: "1px solid #2a2a44",
+                            color: "#8888aa",
+                            borderRadius: 8,
+                            padding: "5px 10px",
+                            fontSize: 11,
+                            fontWeight: 700,
+                            cursor: "pointer",
+                            whiteSpace: "nowrap"
+                          }}
+                        >
+                          🔄 Swap
+                        </button>
+                      )}
+                    </div>
                   </div>
 
                   <div style={{
@@ -341,7 +542,7 @@ export default function FitnessApp() {
                       return (
                         <button
                           key={i}
-                          onClick={() => toggleSet(exUid, i + 1)}
+                          onClick={() => toggleSet(exUid, i + 1, ex.name, ex.rest, i === ex.sets - 1)}
                           style={{
                             flex: 1,
                             padding: "10px 0",
@@ -640,6 +841,183 @@ export default function FitnessApp() {
             </div>
           </div>
         )}
+
+        {activeTab === "progress" && (
+          <ProgressTab history={history} />
+        )}
+      </div>
+
+      {restTimer && (
+        <div style={{
+          position: "fixed",
+          bottom: 0,
+          left: "50%",
+          transform: "translateX(-50%)",
+          width: "100%",
+          maxWidth: 420,
+          background: "linear-gradient(135deg, #1a1a2e, #16213e)",
+          borderTop: "1px solid #6c63ff",
+          padding: "14px 20px",
+          boxSizing: "border-box",
+          zIndex: 20,
+          boxShadow: "0 -4px 20px rgba(0,0,0,0.4)"
+        }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+            <div style={{ fontSize: 12, color: "#a78bfa", fontWeight: 700 }}>😮‍💨 Resting — {restTimer.exName}</div>
+            <button
+              onClick={() => setRestTimer(null)}
+              style={{ background: "none", border: "none", color: "#666680", fontSize: 11, cursor: "pointer", fontWeight: 700 }}
+            >
+              Skip ✕
+            </button>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <div style={{ fontSize: 22, fontWeight: 700, color: "#fff", minWidth: 64 }}>
+              {restTimer.secondsLeft > 0
+                ? `${Math.floor(restTimer.secondsLeft / 60)}:${String(restTimer.secondsLeft % 60).padStart(2, "0")}`
+                : "Go! 💪"}
+            </div>
+            <div style={{ flex: 1, background: "#1e1e3a", borderRadius: 99, height: 8 }}>
+              <div style={{
+                background: "linear-gradient(90deg, #6c63ff, #a78bfa)",
+                width: `${(restTimer.secondsLeft / restTimer.total) * 100}%`,
+                height: "100%",
+                borderRadius: 99,
+                transition: "width 1s linear"
+              }} />
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ProgressTab({ history }) {
+  const sorted = useMemo(
+    () => [...history].sort((a, b) => new Date(b.completedAt) - new Date(a.completedAt)),
+    [history]
+  );
+
+  const totalWorkouts = sorted.length;
+  const totalSetsLogged = sorted.reduce(
+    (acc, h) => acc + h.exercises.reduce((a, ex) => a + ex.setsCompleted, 0),
+    0
+  );
+  const workoutsLast7Days = sorted.filter(
+    (h) => Date.now() - new Date(h.completedAt).getTime() <= 7 * 24 * 60 * 60 * 1000
+  ).length;
+
+  // Personal bests: heaviest top-set weight ever logged per exercise name.
+  const personalBests = useMemo(() => {
+    const best = {};
+    for (const entry of sorted) {
+      for (const ex of entry.exercises) {
+        if (!ex.weightsUsed || ex.weightsUsed.length === 0) continue;
+        const topWeight = ex.weightsUsed[ex.weightsUsed.length - 1];
+        const value = parseFloat(topWeight);
+        if (Number.isNaN(value)) continue;
+        if (!best[ex.name] || value > best[ex.name].value) {
+          best[ex.name] = { value, label: topWeight, date: entry.completedAt };
+        }
+      }
+    }
+    return Object.entries(best)
+      .map(([name, data]) => ({ name, ...data }))
+      .sort((a, b) => b.value - a.value);
+  }, [sorted]);
+
+  if (totalWorkouts === 0) {
+    return (
+      <div style={{
+        background: "#111118",
+        border: "1px solid #1e1e3a",
+        borderRadius: 14,
+        padding: 24,
+        textAlign: "center",
+        color: "#8888aa",
+        fontSize: 13
+      }}>
+        📈 No workouts logged yet.<br />Finish a workout and it'll show up here.
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div style={{ display: "flex", gap: 10, marginBottom: 12 }}>
+        {[
+          { label: "Workouts logged", value: totalWorkouts },
+          { label: "Workouts (7 days)", value: workoutsLast7Days },
+          { label: "Sets all-time", value: totalSetsLogged }
+        ].map((stat, i) => (
+          <div key={i} style={{
+            flex: 1,
+            background: "#111118",
+            border: "1px solid #1e1e3a",
+            borderRadius: 14,
+            padding: "14px 10px",
+            textAlign: "center"
+          }}>
+            <div style={{ fontSize: 20, fontWeight: 700, color: "#a78bfa" }}>{stat.value}</div>
+            <div style={{ fontSize: 10, color: "#8888aa", marginTop: 4 }}>{stat.label}</div>
+          </div>
+        ))}
+      </div>
+
+      {personalBests.length > 0 && (
+        <div style={{
+          background: "#111118",
+          border: "1px solid #1e1e3a",
+          borderRadius: 14,
+          padding: 16,
+          marginBottom: 12
+        }}>
+          <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 12 }}>🏆 Personal Bests</div>
+          {personalBests.map((pb, i) => (
+            <div key={i} style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              padding: "8px 0",
+              fontSize: 13,
+              borderTop: i > 0 ? "1px solid #1a1a28" : "none"
+            }}>
+              <span style={{ color: "#ccccdd" }}>{pb.name}</span>
+              <span style={{ color: "#4ade80", fontWeight: 700 }}>{pb.label}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div style={{
+        background: "#111118",
+        border: "1px solid #1e1e3a",
+        borderRadius: 14,
+        padding: 16,
+        marginBottom: 12
+      }}>
+        <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 12 }}>📜 Recent Workouts</div>
+        {sorted.slice(0, 20).map((entry, i) => {
+          const setsDone = entry.exercises.reduce((a, ex) => a + ex.setsCompleted, 0);
+          const setsTotal = entry.exercises.reduce((a, ex) => a + ex.totalSets, 0);
+          return (
+            <div key={entry.key} style={{
+              padding: "10px 0",
+              borderTop: i > 0 ? "1px solid #1a1a28" : "none"
+            }}>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
+                <span style={{ fontWeight: 700 }}>{entry.dayLabel}</span>
+                <span style={{ color: "#8888aa" }}>
+                  {new Date(entry.completedAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+                </span>
+              </div>
+              <div style={{ fontSize: 11, color: "#8888aa", marginTop: 2 }}>
+                {setsDone}/{setsTotal} sets · {entry.exercises.map((ex) => ex.name).join(", ")}
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

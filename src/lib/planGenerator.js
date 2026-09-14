@@ -112,6 +112,28 @@ function personalizationScale(category, profile) {
   return Math.min(1.8, Math.max(0.45, scale));
 }
 
+// Shared by initial plan generation and exercise swaps, so both produce
+// identical personalized numbers for the same exercise/level/profile.
+export function computeWeightsBySet(exercise, category, level, sets, profile) {
+  const weightConf = exercise.suggestedWeight;
+  const range = weightConf ? weightConf[level] : null;
+  if (!range) return null;
+  const scale = personalizationScale(category === "core" ? "pull" : category, profile);
+  let min = range.min * scale;
+  let max = range.max * scale;
+  if (weightConf.equipmentFloor) {
+    min = Math.max(min, weightConf.equipmentFloor);
+    max = Math.max(max, weightConf.equipmentFloor);
+  }
+  return rampWeights(min, max, sets, weightConf.step ?? 1).map((w) => formatWeight(w, weightConf.unit));
+}
+
+// All exercises in a category the user's equipment can perform, in a
+// stable order — used to cycle through swap alternatives for a slot.
+export function getSwapPool(category, available) {
+  return exerciseLibrary[category].filter((ex) => ex.equipment.some((e) => available.includes(e)));
+}
+
 function pickExercise(category, dayIndex, slotIndex, available, used) {
   const pool = exerciseLibrary[category].filter(
     (ex) => ex.equipment.some((e) => available.includes(e)) && !used.has(ex.id)
@@ -137,20 +159,8 @@ export function generateWeekPlan(profile, referenceDate = new Date()) {
     const used = new Set();
     const exercises = dayTemplate.categories.map((category, slotIndex) => {
       const picked = pickExercise(category, dayIndex, slotIndex, available, used);
-      const weightConf = picked.suggestedWeight;
-      const range = weightConf ? weightConf[level] : null;
-      let weightsBySet = null;
-      if (range) {
-        const scale = personalizationScale(category === "core" ? "pull" : category, profile);
-        let min = range.min * scale;
-        let max = range.max * scale;
-        if (weightConf.equipmentFloor) {
-          min = Math.max(min, weightConf.equipmentFloor);
-          max = Math.max(max, weightConf.equipmentFloor);
-        }
-        weightsBySet = rampWeights(min, max, sets, weightConf.step ?? 1).map((w) => formatWeight(w, weightConf.unit));
-      }
-      return { ...picked, sets, rest, weightsBySet };
+      const weightsBySet = computeWeightsBySet(picked, category, level, sets, profile);
+      return { ...picked, sets, rest, category, weightsBySet };
     });
 
     const date = new Date(monday);
