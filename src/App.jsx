@@ -3,7 +3,7 @@ import {
   Dumbbell, Utensils, Calendar, CalendarDays, TrendingUp, Flame, Info, Video, RefreshCw,
   Lightbulb, ChevronRight, ChevronDown, ChevronUp, CircleCheck, Target, Activity,
   CheckCircle2, Search, X, Minus, Plus, MessageCircle, BarChart3, Droplets,
-  Cookie, MoonStar, Footprints, Pencil, Timer, Camera, Download, Upload, RotateCcw,
+  Cookie, MoonStar, Footprints, Pencil, Timer, Camera, RotateCcw,
   Trophy, History, Sunrise, Sun, Moon, GlassWater, PartyPopper, Wind, Zap
 } from "lucide-react";
 import Questionnaire from "./components/Questionnaire.jsx";
@@ -399,6 +399,56 @@ function WeightEditSheet({ sheet, hasOverride, onSave, onReset, onClose }) {
   );
 }
 
+function OnboardingLoader({ name, onDone }) {
+  useEffect(() => {
+    const t = setTimeout(onDone, 1900);
+    return () => clearTimeout(t);
+  }, [onDone]);
+
+  return (
+    <div style={{
+      fontFamily: "'Inter', 'Helvetica Neue', sans-serif",
+      background: "var(--bg)",
+      minHeight: "100vh",
+      color: "var(--text)",
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      justifyContent: "center",
+      padding: 24,
+      boxSizing: "border-box",
+      textAlign: "center"
+    }}>
+      <div style={{ position: "relative", width: 84, height: 84, marginBottom: 28 }}>
+        <div style={{
+          position: "absolute",
+          inset: 0,
+          borderRadius: "50%",
+          border: "3px solid var(--border)",
+          borderTopColor: "var(--accent)",
+          animation: "spin 0.9s linear infinite"
+        }} />
+        <div style={{
+          position: "absolute",
+          inset: 0,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          animation: "pulse 1.4s ease-in-out infinite"
+        }}>
+          <Dumbbell size={32} color="var(--accent)" />
+        </div>
+      </div>
+      <div style={{ fontSize: 20, fontWeight: 800, letterSpacing: -0.3, marginBottom: 8, animation: "fadeInUp 0.5s ease" }}>
+        {name ? `Tailoring a plan for ${name}` : "Tailoring your plan"}
+      </div>
+      <div style={{ fontSize: 14, color: "var(--text-dim)", animation: "fadeInUp 0.5s ease 0.1s both" }}>
+        Personalizing your workouts and meals...
+      </div>
+    </div>
+  );
+}
+
 export default function FitnessApp() {
   const [profile, setProfile] = useState(() => loadJSON(PROFILE_KEY, null));
   const [progress, setProgress] = useState(() => loadJSON(PROGRESS_KEY, {}));
@@ -411,14 +461,15 @@ export default function FitnessApp() {
   const [selectedDayId, setSelectedDayId] = useState(null);
   const [sheet, setSheet] = useState(null); // { type: "tip"|"video"|"info", ex, exUid }
   const [restTimer, setRestTimer] = useState(null); // { exUid, exName, total, secondsLeft }
+  const [preFinishSnapshot, setPreFinishSnapshot] = useState(null); // { workoutId, completedSets } — lets "Finish Workout" be undone
   const [editingSchedule, setEditingSchedule] = useState(false);
   const [draftDays, setDraftDays] = useState([]);
   const [foodQuery, setFoodQuery] = useState("");
   const [customFoodMode, setCustomFoodMode] = useState(false);
   const [customFoodForm, setCustomFoodForm] = useState({ name: "", calories: "", protein: "", carbs: "", fat: "" });
-  const importInputRef = useRef(null);
   const avatarInputRef = useRef(null);
   const [showProfile, setShowProfile] = useState(false);
+  const [showOnboardingLoader, setShowOnboardingLoader] = useState(false);
 
   const plan = useMemo(() => {
     if (!profile) return null;
@@ -555,9 +606,14 @@ export default function FitnessApp() {
         onComplete={(answers) => {
           saveJSON(PROFILE_KEY, answers);
           setProfile(answers);
+          setShowOnboardingLoader(true);
         }}
       />
     );
+  }
+
+  if (showOnboardingLoader) {
+    return <OnboardingLoader name={profile.name} onDone={() => setShowOnboardingLoader(false)} />;
   }
 
   const retakeQuestionnaire = () => {
@@ -585,59 +641,6 @@ export default function FitnessApp() {
   const pickAvatarFile = (file) => {
     if (!file) return;
     resizeImageFile(file, 160, (dataUrl) => updateProfile({ avatar: dataUrl }));
-  };
-
-  const exportBackup = () => {
-    const payload = { exportedAt: new Date().toISOString(), profile, progress, history, swaps, customDays, foodLog, weightMemory };
-    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `fitness-app-backup-${new Date().toISOString().slice(0, 10)}.json`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-  };
-
-  const importBackup = (file) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const data = JSON.parse(e.target.result);
-        if (data.profile) {
-          saveJSON(PROFILE_KEY, data.profile);
-          setProfile(data.profile);
-        }
-        if (data.progress) {
-          saveJSON(PROGRESS_KEY, data.progress);
-          setProgress(data.progress);
-        }
-        if (data.history) {
-          saveJSON(HISTORY_KEY, data.history);
-          setHistory(data.history);
-        }
-        if (data.swaps) {
-          saveJSON(SWAPS_KEY, data.swaps);
-          setSwaps(data.swaps);
-        }
-        if (data.customDays) {
-          saveJSON(CUSTOM_DAYS_KEY, data.customDays);
-          setCustomDays(data.customDays);
-        }
-        if (data.foodLog) {
-          saveJSON(FOOD_LOG_KEY, data.foodLog);
-          setFoodLog(data.foodLog);
-        }
-        if (data.weightMemory) {
-          saveJSON(WEIGHT_MEMORY_KEY, data.weightMemory);
-          setWeightMemory(data.weightMemory);
-        }
-      } catch {
-        window.alert("That file doesn't look like a valid backup.");
-      }
-    };
-    reader.readAsText(file);
   };
 
   const swapExercise = (exIndex) => {
@@ -745,7 +748,6 @@ export default function FitnessApp() {
       const current = prev[workout.id] ?? { completedSets: {}, notes: "" };
       return { ...prev, [workout.id]: updater(current) };
     });
-    setSavedNote(false);
   };
 
   const startRestTimer = (exUid, exName, restLabel) => {
@@ -774,6 +776,7 @@ export default function FitnessApp() {
   };
 
   const finishWorkout = () => {
+    setPreFinishSnapshot({ workoutId: workout.id, completedSets: dayProgress.completedSets });
     setDayProgress((current) => {
       const completedSets = { ...current.completedSets };
       displayedWorkout.exercises.forEach((ex, exIndex) => {
@@ -783,6 +786,14 @@ export default function FitnessApp() {
       return { ...current, completedSets };
     });
     setRestTimer(null);
+  };
+
+  // Reverts a "Finish Workout" tap, restoring exactly the sets that were
+  // completed beforehand — only offered right after that specific action.
+  const undoFinishWorkout = () => {
+    if (!preFinishSnapshot || preFinishSnapshot.workoutId !== workout.id) return;
+    setDayProgress((current) => ({ ...current, completedSets: preFinishSnapshot.completedSets }));
+    setPreFinishSnapshot(null);
   };
 
   const openSheet = (type, ex, exUid, extra = {}) => setSheet({ type, ex, exUid, ...extra });
@@ -1182,6 +1193,28 @@ export default function FitnessApp() {
                 <PartyPopper size={36} color={C.successBright} style={{ marginBottom: 10 }} />
                 <div style={{ fontWeight: 800, fontSize: 20, color: C.successBright }}>{workout.label} Complete!</div>
                 <div style={{ fontSize: 14, color: C.textDim, marginTop: 6 }}>Come back and tackle your next day.</div>
+                {preFinishSnapshot && preFinishSnapshot.workoutId === workout.id && (
+                  <button
+                    onClick={undoFinishWorkout}
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 6,
+                      marginTop: 14,
+                      background: "none",
+                      border: `1px solid ${C.borderDone}`,
+                      borderRadius: RADIUS.pill,
+                      color: C.successBright,
+                      fontWeight: 700,
+                      fontSize: 13,
+                      padding: "9px 16px",
+                      cursor: "pointer"
+                    }}
+                  >
+                    <RotateCcw size={14} />
+                    Marked done by mistake? Undo
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -1654,26 +1687,12 @@ export default function FitnessApp() {
         }}
         style={{ display: "none" }}
       />
-      <input
-        ref={importInputRef}
-        type="file"
-        accept="application/json"
-        onChange={(e) => {
-          const file = e.target.files?.[0];
-          if (file) importBackup(file);
-          e.target.value = "";
-        }}
-        style={{ display: "none" }}
-      />
-
       {showProfile && (
         <ProfilePanel
           profile={profile}
           onClose={() => setShowProfile(false)}
           onUpdate={updateProfile}
           onPickAvatar={() => avatarInputRef.current?.click()}
-          onExport={exportBackup}
-          onImportClick={() => importInputRef.current?.click()}
           onRetake={retakeQuestionnaire}
         />
       )}
@@ -1746,22 +1765,37 @@ export default function FitnessApp() {
   );
 }
 
-function ProfilePanel({ profile, onClose, onUpdate, onPickAvatar, onExport, onImportClick, onRetake }) {
+const PROFILE_DRAFT_KEYS = ["name", "bodyWeight", "age", "sex", "goal", "level", "daysPerWeek", "equipment", "diet"];
+
+function ProfilePanel({ profile, onClose, onUpdate, onPickAvatar, onRetake }) {
+  const [draft, setDraft] = useState(() => {
+    const d = {};
+    for (const key of PROFILE_DRAFT_KEYS) d[key] = key === "name" ? profile.name || "" : profile[key];
+    return d;
+  });
   const [nameDraft, setNameDraft] = useState(profile.name || "");
   const [weightDraft, setWeightDraft] = useState(profile.bodyWeight != null ? String(profile.bodyWeight) : "");
   const [ageDraft, setAgeDraft] = useState(profile.age != null ? String(profile.age) : "");
 
+  const dirty = PROFILE_DRAFT_KEYS.some((key) => draft[key] !== (key === "name" ? profile.name || "" : profile[key]));
+
+  const patchDraft = (fields) => setDraft((d) => ({ ...d, ...fields }));
+
   const commitName = () => {
     const trimmed = nameDraft.trim();
-    if (trimmed !== (profile.name || "")) onUpdate({ name: trimmed });
+    if (trimmed !== draft.name) patchDraft({ name: trimmed });
   };
   const commitWeight = () => {
     const num = parseFloat(weightDraft);
-    if (!Number.isNaN(num) && num > 0 && num !== profile.bodyWeight) onUpdate({ bodyWeight: num });
+    if (!Number.isNaN(num) && num > 0 && num !== draft.bodyWeight) patchDraft({ bodyWeight: num });
   };
   const commitAge = () => {
     const num = parseInt(ageDraft, 10);
-    if (!Number.isNaN(num) && num > 0 && num !== profile.age) onUpdate({ age: num });
+    if (!Number.isNaN(num) && num > 0 && num !== draft.age) patchDraft({ age: num });
+  };
+
+  const handleSave = () => {
+    onUpdate(draft);
   };
 
   const handleRetake = () => {
@@ -1775,11 +1809,11 @@ function ProfilePanel({ profile, onClose, onUpdate, onPickAvatar, onExport, onIm
       <div style={{ fontSize: 13, color: C.textDim, marginBottom: 8, fontWeight: 600 }}>{label}</div>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
         {PROFILE_FIELD_OPTIONS[key].map((opt) => {
-          const selected = profile[key] === opt.value;
+          const selected = draft[key] === opt.value;
           return (
             <button
               key={opt.value}
-              onClick={() => onUpdate({ [key]: opt.value })}
+              onClick={() => patchDraft({ [key]: opt.value })}
               style={{
                 background: selected ? C.accent : C.inset,
                 border: selected ? `1px solid ${C.accent}` : `1px solid ${C.border}`,
@@ -1914,26 +1948,36 @@ function ProfilePanel({ profile, onClose, onUpdate, onPickAvatar, onExport, onIm
         {fieldRow("Sex", "sex")}
         {fieldRow("Main goal", "goal")}
         {fieldRow("Experience level", "level")}
-        {fieldRow("Days per week", "daysPerWeek", profile.daysPerWeek && "Changing this regenerates your split — a custom Schedule (Edit Days) may reset to the default.")}
+        {fieldRow("Days per week", "daysPerWeek", draft.daysPerWeek && "Changing this regenerates your split — a custom Schedule (Edit Days) may reset to the default.")}
         {fieldRow("Equipment", "equipment")}
         {fieldRow("Diet", "diet")}
 
+        {dirty && (
+          <button
+            onClick={handleSave}
+            style={{
+              width: "100%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 7,
+              background: C.accent,
+              border: "none",
+              borderRadius: RADIUS.chip,
+              color: "#fff",
+              padding: "15px 0",
+              fontSize: 15,
+              fontWeight: 700,
+              cursor: "pointer",
+              marginBottom: 20
+            }}
+          >
+            <CheckCircle2 size={17} /> Save Changes
+          </button>
+        )}
+
         <div style={{ borderTop: `1px solid ${C.border}`, marginTop: 12, paddingTop: 20 }}>
           <div style={{ fontSize: 13, color: C.textDim, marginBottom: 12, fontWeight: 600 }}>Data & Account</div>
-          <div style={{ display: "flex", gap: 10, marginBottom: 12 }}>
-            <button
-              onClick={onExport}
-              style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 7, background: C.inset, border: `1px solid ${C.border}`, borderRadius: RADIUS.chip, color: C.text, padding: "12px 0", fontSize: 14, fontWeight: 700, cursor: "pointer" }}
-            >
-              <Download size={15} /> Export
-            </button>
-            <button
-              onClick={onImportClick}
-              style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 7, background: C.inset, border: `1px solid ${C.border}`, borderRadius: RADIUS.chip, color: C.text, padding: "12px 0", fontSize: 14, fontWeight: 700, cursor: "pointer" }}
-            >
-              <Upload size={15} /> Import
-            </button>
-          </div>
           <button
             onClick={handleRetake}
             style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 7, background: C.dangerBg, border: "none", borderRadius: RADIUS.chip, color: C.danger, padding: "12px 0", fontSize: 14, fontWeight: 700, cursor: "pointer" }}
