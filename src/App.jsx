@@ -275,7 +275,7 @@ export default function FitnessApp() {
       const key = todayKey();
       const dayEntries = prev[key] ?? [];
       const id = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-      return { ...prev, [key]: [...dayEntries, { ...entry, id }] };
+      return { ...prev, [key]: [...dayEntries, { ...entry, id, qty: 1 }] };
     });
     setFoodQuery("");
     setCustomFoodMode(false);
@@ -286,6 +286,17 @@ export default function FitnessApp() {
     setFoodLog((prev) => {
       const key = todayKey();
       return { ...prev, [key]: (prev[key] ?? []).filter((e) => e.id !== id) };
+    });
+  };
+
+  const updateFoodQty = (id, delta) => {
+    setFoodLog((prev) => {
+      const key = todayKey();
+      const dayEntries = prev[key] ?? [];
+      return {
+        ...prev,
+        [key]: dayEntries.map((e) => (e.id === id ? { ...e, qty: Math.max(1, (e.qty || 1) + delta) } : e))
+      };
     });
   };
 
@@ -321,10 +332,13 @@ export default function FitnessApp() {
     : [];
 
   const foodTotals = todayFoodEntries.reduce(
-    (acc, e) => ({
-      calories: acc.calories + (e.calories || 0),
-      protein: acc.protein + (e.protein || 0)
-    }),
+    (acc, e) => {
+      const qty = e.qty || 1;
+      return {
+        calories: acc.calories + (e.calories || 0) * qty,
+        protein: acc.protein + (e.protein || 0) * qty
+      };
+    },
     { calories: 0, protein: 0 }
   );
 
@@ -1042,11 +1056,31 @@ export default function FitnessApp() {
 
               {todayFoodEntries.length > 0 && (
                 <div>
-                  {todayFoodEntries.map((e) => (
-                    <div key={e.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 0", borderTop: "1px solid #1a1a28", fontSize: 12 }}>
-                      <span style={{ color: "#ccccdd" }}>{e.name}</span>
+                  {todayFoodEntries.map((e) => {
+                    const qty = e.qty || 1;
+                    return (
+                    <div key={e.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderTop: "1px solid #1a1a28", fontSize: 12, gap: 8 }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ color: "#ccccdd" }}>{e.name}</div>
+                        {e.unit && <div style={{ color: "#666680", fontSize: 10, marginTop: 1 }}>{e.unit} each</div>}
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                        <button
+                          onClick={() => updateFoodQty(e.id, -1)}
+                          style={{ width: 22, height: 22, background: "#0d0d1a", border: "1px solid #2a2a44", borderRadius: 6, color: "#8888aa", cursor: "pointer", fontSize: 13, lineHeight: 1, padding: 0 }}
+                        >
+                          −
+                        </button>
+                        <span style={{ minWidth: 16, textAlign: "center", color: "#f0f0f5", fontWeight: 600 }}>{qty}</span>
+                        <button
+                          onClick={() => updateFoodQty(e.id, 1)}
+                          style={{ width: 22, height: 22, background: "#0d0d1a", border: "1px solid #2a2a44", borderRadius: 6, color: "#8888aa", cursor: "pointer", fontSize: 13, lineHeight: 1, padding: 0 }}
+                        >
+                          +
+                        </button>
+                      </div>
                       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <span style={{ color: "#a78bfa" }}>{Math.round(e.calories)} kcal</span>
+                        <span style={{ color: "#a78bfa", whiteSpace: "nowrap" }}>{Math.round(e.calories * qty)} kcal</span>
                         <button
                           onClick={() => removeFoodEntry(e.id)}
                           style={{ background: "none", border: "none", color: "#666680", cursor: "pointer", fontSize: 12, padding: 0 }}
@@ -1055,7 +1089,8 @@ export default function FitnessApp() {
                         </button>
                       </div>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
