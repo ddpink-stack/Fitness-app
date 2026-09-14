@@ -10,6 +10,7 @@ import Questionnaire from "./components/Questionnaire.jsx";
 import { generateWeekPlan, computeWeightsBySet, getSwapPool } from "./lib/planGenerator.js";
 import { availableEquipment, categoryPurpose } from "./data/exercises.js";
 import { foodDatabase, genericFoodCategories } from "./data/foods.js";
+import { ExerciseIcon } from "./data/exerciseIcons.jsx";
 
 const PROFILE_KEY = "fitness-app:profile";
 const PROGRESS_KEY = "fitness-app:progress";
@@ -785,10 +786,12 @@ export default function FitnessApp() {
                   transition: "all 0.3s"
                 }}>
                   <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 14 }}>
-                    <span style={{ fontSize: 28 }}>{ex.emoji}</span>
+                    <div style={{ flexShrink: 0, color: C.accentSoft }}>
+                      <ExerciseIcon id={ex.id} size={30} />
+                    </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: 12, color: C.accentSoft, letterSpacing: 1.5, textTransform: "uppercase", fontWeight: 700, marginBottom: 4 }}>
-                        Exercise {exIndex + 1} of {displayedWorkout.exercises.length}
+                        {exIndex + 1} of {displayedWorkout.exercises.length}
                       </div>
                       <div style={{ fontWeight: 700, fontSize: 18, display: "flex", alignItems: "center", gap: 8, lineHeight: 1.3 }}>
                         {ex.name}
