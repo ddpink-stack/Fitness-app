@@ -81,6 +81,25 @@ export default function FitnessApp() {
     }));
   };
 
+  const completeAllSets = (exerciseId, count) => {
+    setDayProgress((current) => {
+      const completedSets = { ...current.completedSets };
+      for (let i = 1; i <= count; i++) completedSets[`${exerciseId}-${i}`] = true;
+      return { ...current, completedSets };
+    });
+  };
+
+  const finishWorkout = () => {
+    setDayProgress((current) => {
+      const completedSets = { ...current.completedSets };
+      workout.exercises.forEach((ex, exIndex) => {
+        const exUid = `${workout.id}-${ex.id}-${exIndex}`;
+        for (let i = 1; i <= ex.sets; i++) completedSets[`${exUid}-${i}`] = true;
+      });
+      return { ...current, completedSets };
+    });
+  };
+
   const toggleTip = (id) => {
     setShowTip((prev) => ({ ...prev, [id]: !prev[id] }));
   };
@@ -352,20 +371,38 @@ export default function FitnessApp() {
                     })}
                   </div>
 
-                  <button
-                    onClick={() => toggleTip(exUid)}
-                    style={{
-                      background: "none",
-                      border: "none",
-                      color: "#6c63ff",
-                      fontSize: 12,
-                      cursor: "pointer",
-                      padding: 0,
-                      fontWeight: 600
-                    }}
-                  >
-                    {showTip[exUid] ? "▲ Hide coach tip" : "▼ Coach tip"}
-                  </button>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <button
+                      onClick={() => toggleTip(exUid)}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        color: "#6c63ff",
+                        fontSize: 12,
+                        cursor: "pointer",
+                        padding: 0,
+                        fontWeight: 600
+                      }}
+                    >
+                      {showTip[exUid] ? "▲ Hide coach tip" : "▼ Coach tip"}
+                    </button>
+                    {!exDone && (
+                      <button
+                        onClick={() => completeAllSets(exUid, ex.sets)}
+                        style={{
+                          background: "none",
+                          border: "none",
+                          color: "#4ade80",
+                          fontSize: 12,
+                          cursor: "pointer",
+                          padding: 0,
+                          fontWeight: 600
+                        }}
+                      >
+                        ✓ Mark all sets done
+                      </button>
+                    )}
+                  </div>
                   {showTip[exUid] && (
                     <div style={{
                       marginTop: 8,
@@ -412,6 +449,26 @@ export default function FitnessApp() {
                 </div>
               ))}
             </div>
+
+            {progressPct < 100 && (
+              <button
+                onClick={finishWorkout}
+                style={{
+                  background: "linear-gradient(135deg, #16a34a, #22c55e)",
+                  border: "none",
+                  borderRadius: 14,
+                  color: "#fff",
+                  fontWeight: 700,
+                  fontSize: 14,
+                  padding: "14px 20px",
+                  cursor: "pointer",
+                  width: "100%",
+                  marginBottom: 12
+                }}
+              >
+                ✅ Finish Workout — mark remaining sets done
+              </button>
+            )}
 
             <div style={{
               background: "#111118",
