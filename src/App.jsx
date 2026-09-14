@@ -575,6 +575,27 @@ export default function FitnessApp() {
   const preWorkoutMeal = plan ? plan.nutrition.find((m) => m.time === "Pre Workout") : null;
   const postWorkoutMeal = plan ? plan.nutrition.find((m) => m.time === "Post Workout") : null;
 
+  // Captures the completedSets right before a day flips to 100%, no
+  // matter what triggered it (a single set tap, "Mark all done" on the
+  // last exercise, or the "Finish Workout" button) — so "Undo" always
+  // has something to restore to when it was reached by mistake. Guarded
+  // by prevWorkoutIdRef so switching to an already-finished day doesn't
+  // mistake a day-change for a fresh completion and capture the wrong
+  // day's sets.
+  const prevCompletedSetsRef = useRef(dayProgress.completedSets);
+  const prevWorkoutIdRef = useRef(workout ? workout.id : null);
+  const wasCompleteRef = useRef(false);
+  useEffect(() => {
+    if (!workout) return;
+    const sameDay = prevWorkoutIdRef.current === workout.id;
+    if (sameDay && progressPct === 100 && !wasCompleteRef.current) {
+      setPreFinishSnapshot({ workoutId: workout.id, completedSets: prevCompletedSetsRef.current });
+    }
+    wasCompleteRef.current = progressPct === 100;
+    prevWorkoutIdRef.current = workout.id;
+    prevCompletedSetsRef.current = dayProgress.completedSets;
+  }, [progressPct, dayProgress, workout]);
+
   // Logs a completed workout to history once every set is done, upserting
   // by day+date so revisiting an already-finished day doesn't duplicate it.
   useEffect(() => {
@@ -776,7 +797,6 @@ export default function FitnessApp() {
   };
 
   const finishWorkout = () => {
-    setPreFinishSnapshot({ workoutId: workout.id, completedSets: dayProgress.completedSets });
     setDayProgress((current) => {
       const completedSets = { ...current.completedSets };
       displayedWorkout.exercises.forEach((ex, exIndex) => {
@@ -788,8 +808,9 @@ export default function FitnessApp() {
     setRestTimer(null);
   };
 
-  // Reverts a "Finish Workout" tap, restoring exactly the sets that were
-  // completed beforehand — only offered right after that specific action.
+  // Reverts whatever just marked this day 100% complete — a set tap,
+  // "Mark all done", or the "Finish Workout" button — restoring exactly
+  // the sets that were completed right before that happened.
   const undoFinishWorkout = () => {
     if (!preFinishSnapshot || preFinishSnapshot.workoutId !== workout.id) return;
     setDayProgress((current) => ({ ...current, completedSets: preFinishSnapshot.completedSets }));
