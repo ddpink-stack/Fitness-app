@@ -247,9 +247,9 @@ export default function FitnessApp() {
                       <div style={{ fontSize: 12, color: "#8888aa", marginTop: 2 }}>
                         {ex.sets} sets · {ex.reps} · {ex.rest}
                       </div>
-                      {ex.weight && (
+                      {ex.weightsBySet && (
                         <div style={{ fontSize: 12, color: "#a78bfa", marginTop: 2, fontWeight: 600 }}>
-                          🏋️ Suggested: {ex.weight}
+                          🏋️ Ramp up: {ex.weightsBySet.join(" → ")}
                         </div>
                       )}
                     </div>
@@ -336,7 +336,17 @@ export default function FitnessApp() {
                             transition: "all 0.2s"
                           }}
                         >
-                          {done ? "✓" : `Set ${i + 1}`}
+                          <div>{done ? "✓" : `Set ${i + 1}`}</div>
+                          {ex.weightsBySet && (
+                            <div style={{
+                              fontSize: 9,
+                              fontWeight: 600,
+                              marginTop: 2,
+                              opacity: done ? 0.9 : 0.75
+                            }}>
+                              {ex.weightsBySet[i]}
+                            </div>
+                          )}
                         </button>
                       );
                     })}

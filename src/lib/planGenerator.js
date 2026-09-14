@@ -54,6 +54,25 @@ function formatDayLabel(date) {
   return date.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" });
 }
 
+// Ramps weight up across sets (lighter warm-up set -> heavier working
+// sets), like a trainer coaching you through a session, rounded to a
+// sensible increment for the equipment (dumbbells vs. barbell plates).
+function rampWeights(min, max, count, step) {
+  const raw = Array.from({ length: count }, (_, i) =>
+    count === 1 ? max : min + ((max - min) * i) / (count - 1)
+  );
+  const rounded = raw.map((w) => Math.round(w / step) * step);
+  for (let i = 1; i < rounded.length; i++) {
+    if (rounded[i] < rounded[i - 1]) rounded[i] = rounded[i - 1];
+  }
+  return rounded;
+}
+
+function formatWeight(value, unit) {
+  const num = Number.isInteger(value) ? value : Math.round(value * 10) / 10;
+  return `${num} ${unit}`;
+}
+
 function pickExercise(category, dayIndex, slotIndex, available, used) {
   const pool = exerciseLibrary[category].filter(
     (ex) => ex.equipment.some((e) => available.includes(e)) && !used.has(ex.id)
@@ -79,8 +98,14 @@ export function generateWeekPlan(profile, referenceDate = new Date()) {
     const used = new Set();
     const exercises = dayTemplate.categories.map((category, slotIndex) => {
       const picked = pickExercise(category, dayIndex, slotIndex, available, used);
-      const weight = picked.suggestedWeight ? picked.suggestedWeight[level] ?? null : null;
-      return { ...picked, sets, rest, weight };
+      const weightConf = picked.suggestedWeight;
+      const range = weightConf ? weightConf[level] : null;
+      const weightsBySet = range
+        ? rampWeights(range.min, range.max, sets, weightConf.step ?? 1).map((w) =>
+            formatWeight(w, weightConf.unit)
+          )
+        : null;
+      return { ...picked, sets, rest, weightsBySet };
     });
 
     const date = new Date(monday);

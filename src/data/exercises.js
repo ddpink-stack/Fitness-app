@@ -27,9 +27,11 @@ export const exerciseLibrary = {
       videoId: "kgr3lCKx6_M",
       emoji: "🏋️",
       suggestedWeight: {
-        beginner: "6–8 kg each hand",
-        intermediate: "10–14 kg each hand",
-        advanced: "16–22 kg each hand"
+        unit: "kg each hand",
+        step: 1,
+        beginner: { min: 6, max: 8 },
+        intermediate: { min: 10, max: 14 },
+        advanced: { min: 16, max: 22 }
       }
     },
     {
@@ -42,9 +44,11 @@ export const exerciseLibrary = {
       videoId: "1jYq9QQEWqE",
       emoji: "💪",
       suggestedWeight: {
-        beginner: "4–6 kg each hand",
-        intermediate: "8–10 kg each hand",
-        advanced: "12–16 kg each hand"
+        unit: "kg each hand",
+        step: 1,
+        beginner: { min: 4, max: 6 },
+        intermediate: { min: 8, max: 10 },
+        advanced: { min: 12, max: 16 }
       }
     },
     {
@@ -57,9 +61,11 @@ export const exerciseLibrary = {
       videoId: "Pp8rHcFVIYg",
       emoji: "🏋️",
       suggestedWeight: {
-        beginner: "Empty bar (20 kg)",
-        intermediate: "40–50 kg total",
-        advanced: "60–80 kg total"
+        unit: "kg total",
+        step: 2.5,
+        beginner: { min: 20, max: 20 },
+        intermediate: { min: 40, max: 50 },
+        advanced: { min: 60, max: 80 }
       }
     }
   ],
@@ -74,9 +80,11 @@ export const exerciseLibrary = {
       videoId: "fURsHPHgssI",
       emoji: "💪",
       suggestedWeight: {
-        beginner: "6–8 kg",
-        intermediate: "10–14 kg",
-        advanced: "16–22 kg"
+        unit: "kg",
+        step: 1,
+        beginner: { min: 6, max: 8 },
+        intermediate: { min: 10, max: 14 },
+        advanced: { min: 16, max: 22 }
       }
     },
     {
@@ -99,9 +107,11 @@ export const exerciseLibrary = {
       videoId: "Z_3xHwuO8Tk",
       emoji: "🎯",
       suggestedWeight: {
-        beginner: "15–20 kg",
-        intermediate: "25–35 kg",
-        advanced: "40–55 kg"
+        unit: "kg",
+        step: 5,
+        beginner: { min: 15, max: 20 },
+        intermediate: { min: 25, max: 35 },
+        advanced: { min: 40, max: 55 }
       }
     },
     {
@@ -114,9 +124,11 @@ export const exerciseLibrary = {
       videoId: "Lf4LUL3FeUM",
       emoji: "🏋️",
       suggestedWeight: {
-        beginner: "Empty bar (20 kg)",
-        intermediate: "35–45 kg total",
-        advanced: "50–70 kg total"
+        unit: "kg total",
+        step: 2.5,
+        beginner: { min: 20, max: 20 },
+        intermediate: { min: 35, max: 45 },
+        advanced: { min: 50, max: 70 }
       }
     }
   ],
@@ -131,9 +143,11 @@ export const exerciseLibrary = {
       videoId: "k_EhLGvM8TQ",
       emoji: "🏋️",
       suggestedWeight: {
-        beginner: "6–10 kg",
-        intermediate: "12–16 kg",
-        advanced: "18–24 kg"
+        unit: "kg",
+        step: 1,
+        beginner: { min: 6, max: 10 },
+        intermediate: { min: 12, max: 16 },
+        advanced: { min: 18, max: 24 }
       }
     },
     {
@@ -166,9 +180,11 @@ export const exerciseLibrary = {
       videoId: "8nm863C0c60",
       emoji: "🦿",
       suggestedWeight: {
-        beginner: "20–40 kg (plus sled)",
-        intermediate: "60–90 kg (plus sled)",
-        advanced: "100–140 kg (plus sled)"
+        unit: "kg (plus sled)",
+        step: 5,
+        beginner: { min: 20, max: 40 },
+        intermediate: { min: 60, max: 90 },
+        advanced: { min: 100, max: 140 }
       }
     }
   ],
