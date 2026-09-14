@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Questionnaire from "./components/Questionnaire.jsx";
 import { generateWeekPlan, computeWeightsBySet, getSwapPool } from "./lib/planGenerator.js";
 import { availableEquipment } from "./data/exercises.js";
-import { foodDatabase } from "./data/foods.js";
+import { foodDatabase, genericFoodCategories } from "./data/foods.js";
 
 const PROFILE_KEY = "fitness-app:profile";
 const PROGRESS_KEY = "fitness-app:progress";
@@ -55,7 +55,7 @@ export default function FitnessApp() {
   const [draftDays, setDraftDays] = useState([]);
   const [foodQuery, setFoodQuery] = useState("");
   const [customFoodMode, setCustomFoodMode] = useState(false);
-  const [customFoodForm, setCustomFoodForm] = useState({ name: "", calories: "" });
+  const [customFoodForm, setCustomFoodForm] = useState({ name: "", calories: "", protein: "", carbs: "", fat: "" });
   const importInputRef = useRef(null);
 
   const plan = useMemo(() => {
@@ -279,7 +279,7 @@ export default function FitnessApp() {
     });
     setFoodQuery("");
     setCustomFoodMode(false);
-    setCustomFoodForm({ name: "", calories: "" });
+    setCustomFoodForm({ name: "", calories: "", protein: "", carbs: "", fat: "" });
   };
 
   const removeFoodEntry = (id) => {
@@ -289,14 +289,35 @@ export default function FitnessApp() {
     });
   };
 
+  const applyCategoryEstimate = (cat) => {
+    setCustomFoodForm((f) => ({
+      ...f,
+      calories: String(cat.calories),
+      protein: String(cat.protein),
+      carbs: String(cat.carbs),
+      fat: String(cat.fat)
+    }));
+  };
+
   const submitCustomFood = () => {
     const calories = parseFloat(customFoodForm.calories);
     if (!customFoodForm.name.trim() || Number.isNaN(calories)) return;
-    addFoodEntry({ name: customFoodForm.name.trim(), calories, protein: 0, carbs: 0, fat: 0 });
+    addFoodEntry({
+      name: customFoodForm.name.trim(),
+      calories,
+      protein: parseFloat(customFoodForm.protein) || 0,
+      carbs: parseFloat(customFoodForm.carbs) || 0,
+      fat: parseFloat(customFoodForm.fat) || 0
+    });
   };
 
   const foodMatches = foodQuery.trim().length > 0
-    ? foodDatabase.filter((f) => f.name.toLowerCase().includes(foodQuery.trim().toLowerCase())).slice(0, 6)
+    ? (() => {
+        const q = foodQuery.trim().toLowerCase();
+        return foodDatabase
+          .filter((f) => f.name.toLowerCase().includes(q) || (f.keywords ?? []).some((k) => k.includes(q) || q.includes(k)))
+          .slice(0, 6);
+      })()
     : [];
 
   const foodTotals = todayFoodEntries.reduce(
@@ -938,7 +959,7 @@ export default function FitnessApp() {
                     <div style={{ fontSize: 12, color: "#8888aa", marginBottom: 8 }}>No match found.</div>
                   )}
                   <button
-                    onClick={() => { setCustomFoodMode(true); setCustomFoodForm({ name: foodQuery, calories: "" }); }}
+                    onClick={() => { setCustomFoodMode(true); setCustomFoodForm({ name: foodQuery, calories: "", protein: "", carbs: "", fat: "" }); }}
                     style={{ background: "none", border: "none", color: "#6c63ff", fontSize: 12, fontWeight: 600, cursor: "pointer", padding: 0 }}
                   >
                     + Add "{foodQuery}" as custom entry
@@ -952,8 +973,33 @@ export default function FitnessApp() {
                     value={customFoodForm.name}
                     onChange={(e) => setCustomFoodForm((f) => ({ ...f, name: e.target.value }))}
                     placeholder="Food name"
-                    style={{ width: "100%", background: "#111118", border: "1px solid #2a2a44", borderRadius: 6, color: "#f0f0f5", padding: 8, fontSize: 12, marginBottom: 6, boxSizing: "border-box" }}
+                    style={{ width: "100%", background: "#111118", border: "1px solid #2a2a44", borderRadius: 6, color: "#f0f0f5", padding: 8, fontSize: 12, marginBottom: 8, boxSizing: "border-box" }}
                   />
+
+                  <div style={{ fontSize: 11, color: "#8888aa", marginBottom: 6 }}>
+                    Don't know the calories? Pick the closest match to estimate:
+                  </div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
+                    {genericFoodCategories.map((cat, i) => (
+                      <button
+                        key={i}
+                        onClick={() => applyCategoryEstimate(cat)}
+                        style={{
+                          background: "#111118",
+                          border: "1px solid #2a2a44",
+                          borderRadius: 99,
+                          color: "#a78bfa",
+                          fontSize: 11,
+                          fontWeight: 600,
+                          padding: "5px 10px",
+                          cursor: "pointer"
+                        }}
+                      >
+                        {cat.label} · {cat.calories} kcal
+                      </button>
+                    ))}
+                  </div>
+
                   <input
                     type="number"
                     value={customFoodForm.calories}
@@ -961,6 +1007,22 @@ export default function FitnessApp() {
                     placeholder="Calories"
                     style={{ width: "100%", background: "#111118", border: "1px solid #2a2a44", borderRadius: 6, color: "#f0f0f5", padding: 8, fontSize: 12, marginBottom: 8, boxSizing: "border-box" }}
                   />
+                  <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
+                    {[
+                      { key: "protein", placeholder: "Protein (g)" },
+                      { key: "carbs", placeholder: "Carbs (g)" },
+                      { key: "fat", placeholder: "Fat (g)" }
+                    ].map((field) => (
+                      <input
+                        key={field.key}
+                        type="number"
+                        value={customFoodForm[field.key]}
+                        onChange={(e) => setCustomFoodForm((f) => ({ ...f, [field.key]: e.target.value }))}
+                        placeholder={field.placeholder}
+                        style={{ flex: 1, background: "#111118", border: "1px solid #2a2a44", borderRadius: 6, color: "#f0f0f5", padding: 8, fontSize: 12, boxSizing: "border-box" }}
+                      />
+                    ))}
+                  </div>
                   <div style={{ display: "flex", gap: 8 }}>
                     <button
                       onClick={submitCustomFood}
